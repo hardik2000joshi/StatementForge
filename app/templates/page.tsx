@@ -2,12 +2,14 @@
 
 import { Edit, Eye, Plus, Trash } from "lucide-react";
 import { useState } from "react";
+import NewTemplateForm from "@/components/NewTemplateForm";
 
 interface Template {
     id: number;
     name: String;
     category: String;
-    file?: File | null;
+    htmlFile?: File | null;
+    cssFile?: File | null;
 }
 
 export default function TemplatesPage() {
@@ -19,6 +21,13 @@ export default function TemplatesPage() {
             category: "Bank Statement"
         },
     ]);
+    const [showForm, setShowForm] = useState(false);
+
+    // save new template
+    const handleSaveTemplate = (template: Template) => {
+        setTemplate([...templates, template]);
+        setShowForm(false);
+    }  
 
     // Add Template
     const handleAddTemplate = () => {
@@ -54,12 +63,14 @@ export default function TemplatesPage() {
 
     return (
     <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        {! showForm ? (
+            <>
+            <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold mb-4">
             Templates
         </h2>
         <button
-        onClick={handleAddTemplate}
+        onClick={() => setShowForm(true) }
         className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
             <Plus className="h-5 w-5" />
@@ -92,14 +103,7 @@ export default function TemplatesPage() {
                             <div className="text-sm text-gray-600">
                                 {template.category}
                             </div>
-                            {
-                                template.file && (
-                                    <div className="text-xs text-green-600 mt-1">
-                                        uploaded: {template.file.name}
-                                    </div>
-                                )
-                            }
-                    </div>
+                            </div>
 
                     <div className="flex gap-3 items-center">
                         <button className="text-green-600 hover: text-green-800">
@@ -133,7 +137,12 @@ export default function TemplatesPage() {
           <p className="text-gray-500 text-sm">No templates found.</p>
         )}
         </div>
-    </div>
+        </>
+        ): (
+            <NewTemplateForm 
+            onSave={handleSaveTemplate} onCancel={() => setShowForm(false)} />
+        )}
+        </div>
 );
 }
 
