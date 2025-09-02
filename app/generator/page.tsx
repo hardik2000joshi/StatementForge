@@ -114,6 +114,136 @@ export default function GeneratorPage () {
                     </div>
                 </form>
             </div>
+
+            {/* Transaction Generation Rules */}
+            <div className="mt-8 border rounded-lg p-6 shadow-sm">
+                <h2 className="text-lg font-semibold mb-2">
+                    Transaction Generation Rules
+                </h2>
+                <p className="text-sm text-gray-500 mb-6">
+                    Configure realistic transaction patterns and amounts
+                </p>
+
+                {/* Balance Config */}
+                <div className="grid gap-6 sm:grid-cols-2 mb-6">
+                    
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-4">
+                            Balance Configuration
+                        </h4>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Opening Balance (£)
+                        </label>
+                        <input 
+                        type="number" 
+                        placeholder="250"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mt-10">
+                            Target Closing Balance (£)
+                        </label>
+                        <input 
+                        type="number" 
+                        placeholder="280"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        />
+                    </div>
+                </div>
+
+                {/* Transactions per week & Weekend Activity */}
+                <div className="grid gap-6 sm:grid-cols-2 mb-6">
+                    <div>
+                        <h4 className="text-sm font-medium text-gray-900 mb-4">
+                            Transaction Patterns
+                        </h4>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Transactions per Week
+                        </label>
+                        <input 
+                        type="range" 
+                        min="1"
+                        max="50"
+                        defaultValue="25"
+                        className="w-full mt-2"
+                        />
+                        <div className="text-sm text-gray-600">
+                            25
+                        </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mt-10">
+                                Weekend Activity (%)
+                            </label>
+                            <input 
+                            type="range" 
+                            min="0"
+                            max="100"
+                            defaultValue="15"
+                            className="w-full mt-2"
+                            />
+                            <div className="text-sm text-gray-600">
+                                15%
+                            </div>
+                        </div>
+                </div>
+
+                {/* Transaction Amount Ranges */}
+
+                <div className="grid gap-6 sm:grid-cols-2 mb-6">    
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Outgoing: Min Amount (£)
+                        </label>
+                        <input 
+                        type="number" 
+                        placeholder="5"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Outgoing: Max Amount (£)
+                        </label>
+                        <input 
+                        type="number"
+                        placeholder="500"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Incoming: Min Amount (£)
+                        </label>
+                        <input 
+                        type="number"
+                        placeholder="100"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Incoming: Max Amount (£)
+                        </label>
+                        <input 
+                        type="number"
+                        placeholder="1000"
+                        className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" 
+                        />
+                    </div>
+                </div>
+
+                {/* Generate Button */}
+                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-2">
+                    Generate Statement
+                </button>
+
+            </div>
         </div>
     );
 }   
