@@ -1,14 +1,45 @@
 "use client";
 
 import Button from "@/components/ui/Button";
-import { Download, Save } from "lucide-react";
+import { Download, DownloadIcon, Eye, Save } from "lucide-react";
 import { useState } from "react";
 
-export default function GeneratorPage () {
-    const [fromDate, setFromDate] = useState("");
-    const [toDate, setToDate] = useState("");
-    const [template, setTemplate] = useState("");
+interface Generation {
+    id: string;
+    transactions: number;
+    date: string;
+}
 
+
+export default function GeneratorPage () {
+    const [recentGenerations] = useState<Generation[]>([
+        {
+            id: "e236eebc",
+            transactions: 73,
+            date: "8/18/2025,  3:29:01 PM",                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
+        },
+        {
+            id: "259dd114",
+            transactions: 81,
+            date: "8/14/2025,  5:05:09 PM",
+        },
+        {
+            id: "079db28b",
+            transactions: 8,
+            date: "8/14/2025, 4:54:37 PM"
+        },
+        {
+            id: "f35e6e90",
+            transactions: 10,
+            date: "8/14/2025, 4:54:25 PM"
+        },
+        {
+            id: "c2c4a527",
+            transactions: 17,
+            date: "8/14/2025, 4:52:14 PM",
+        },
+    ]);  
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
     return (
         <div className="p-6 space y-6">
             <div className="rounded-2xl border bg-gray-50 p-6 shadow-sm">
@@ -243,7 +274,99 @@ export default function GeneratorPage () {
                     Generate Statement
                 </button>
 
+                {/* Generation Summary */}
+                <div className="rounded-2xl border p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold mb-4">
+                        Generation Summary
+                    </h2>
+                    <div className="text-center">
+                        <p className="text-3xl font-bold text-blue-600">
+                              73
+                        </p>
+                        <p className="text-gray-500">
+                            Transactions Generated
+                        </p>
+                    </div>
+
+                    <div className="mt-6 space-y-2 text-sm">
+                        <div className="flex justify-between">
+                            <span>
+                                Period
+                            </span>
+                            <span>
+                                1/1/2024 -1/31/2024
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <span>
+                                Opening Balance
+                            </span>
+
+                            <span>
+                                £250.00
+                            </span>
+
+                        </div>
+
+                        <div className="flex justify-between text-green-600 font-semibold">
+                            <span>
+                                Closing Balance
+                            </span>
+
+                            <span>
+                                £189,789.00
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between text-green-600 font-semibold">
+                            <span>Net Change</span>
+                            <span>+£189,539.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Recent Generations */}
+                <div className="rounded-2xl border p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold mb-4">
+                        Recent Generations
+                    </h2>
+                    <div className="space-y-3">
+                        {recentGenerations.map((gen, index) => (
+                            <div
+                            key={gen.id}
+                            className={`flex justify-between items-center p-3 rounded-lg ${
+                                index === 0 ? "bg-blue-50" : "hover: bg-gray-50"
+                            }`}
+                            >
+                                <div>
+                                    <p className="font-medium">
+                                        Statement <span className="text-gray-500">
+                                            #{gen.id}
+                                            </span>
+                                    </p>
+                                    <p className="text-sm text-gray-500">
+                                        {gen.transactions} transactions - {gen.date}
+                                    </p>
+
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <Eye className="text-blue-600 cursor-pointer"/>
+                                    <DownloadIcon className="text-blue-600 cursor-pointer"/>
+
+                                </div>
+                                </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 text-center">
+                        <Button variant="outline">
+                            View More Exports & History
+                        </Button>
+                    </div>
+                </div>
             </div>
         </div>
     );
-}   
+}
