@@ -1,8 +1,8 @@
 "use client";
 
 import { Download, Eye, Search, Trash2 } from "lucide-react";
-import { title } from "process";
 import { useState } from "react";
+import Button from "@/components/ui/Button";
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState([
@@ -36,16 +36,26 @@ export default function InvoicesPage() {
         },
     ]);
 
+    const [search, setSearch] = useState("");
+    const [showConfirm, setShowConfirm] = useState(false);
+
     const handleClearAll = () => {
         setInvoices([]);
+        setShowConfirm(false);
     };
+
+    const filteredInvoices = invoices.filter(
+        (invoice) => 
+            invoice.id.toLowerCase().includes(search.toLowerCase()) || 
+        invoice.title.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
         <div className="p-6 space y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl font-semibold">
+                    <h1 className="text-2xl font-semibold">
                         Invoice Management
                     </h1>
                     <p className="text-gray-500 text-sm">
@@ -53,15 +63,12 @@ export default function InvoicesPage() {
                     </p>
                 </div>
 
-                {invoices.length > 0 && (
-                    <button
-                    onClick={handleClearAll}
-                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-full shadow"
+                    <Button
+                    onClick={() => setShowConfirm(true)}
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center gap-2"
                     >
                         <Trash2 className="w-4 h-4" /> Clear All ({invoices.length})
-
-                    </button>
-                )}
+                    </Button>
             </div>
 
             {/* Search Bar */}
@@ -70,6 +77,8 @@ export default function InvoicesPage() {
                 <input 
                 type="text"
                 placeholder="Search invoices..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="w-full rounded-full border px-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
@@ -84,11 +93,13 @@ export default function InvoicesPage() {
                 </p>
 
                 <div className="space-y-3">
-                    {invoices.map((invoice) => (
-                        <div
+                    {filteredInvoices.length > 0 ? (
+                        filteredInvoices.map((invoice) => (
+                            <div
                         key={invoice.id} 
                         className="flex items-center justify-between rounded-xl border bg-gray-50 p-4"                        
                         >
+
                             {/* Left  Section */}
                             <div>
                                 <p className="font-medium">
@@ -102,7 +113,7 @@ export default function InvoicesPage() {
                                 </p>
                             </div>
 
-                            {/* Right Section */}
+                              {/* Right Section */}
                             <div className="flex items-center gap-4">
                                 <p className="text-red-500 font-semibold">
                                     {invoice.amount}
@@ -115,15 +126,42 @@ export default function InvoicesPage() {
                                 </button>
                             </div>
                         </div>
-                    ))}
-
-                    {invoices.length === 0  && (
-                        <p className="text-center text-gray-500 text-sm">
+                    ))
+                ) :  (
+                    <p className="text-center text-gray-500 text-sm">
                             No invoices available
                         </p>
-                    )}
+                )}
                 </div>
             </div>
+
+            {showConfirm && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-[400 px]">
+                        <h2 className="text-lg font-semibold mb-4">
+                            Confirm Delete
+                        </h2>
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete all {invoices.length} invoices? This action cannot be undone.
+                        </p>
+                        <div className="flex justify-end gap-3 border-t border-gray-300 bg-gray-100 px-4 py-2 rounded-b-md">
+                            <Button
+                            onClick={() => setShowConfirm(false)}
+                            className="px-4 py-1.5 rounded border border-gray-400 bg-gray-200 text-gray-900 hover:bg-gray-300"
+                            >
+                               Cancel
+                            </Button>
+
+                            <Button
+                            onClick={handleClearAll}
+                            className="px-4 py-1.5 rounded border border-blue-700 bg-blue-600 text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                OK
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div> 
     );
 }
