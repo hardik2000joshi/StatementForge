@@ -93,6 +93,37 @@ export default function vendorCategoriesPage() {
                     </Card>
                 ))}
             </div>
+
+            {/* Modal */}
+            {showModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+                    <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
+                        <h2 className="text-lg font-semibold mb-4">
+                            Create Vendor Category
+                        </h2>
+                        <form className="space-y-4">
+                            {/* Category Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Category Name
+                                </label>
+                                <input 
+                                type="text" 
+                                placeholder="e.g., Cloud Services"
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Description
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
