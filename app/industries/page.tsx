@@ -3,6 +3,62 @@
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+// Modal Component for adding a new Industry
+const AddIndustryModal = ({ onClose } : {onClose: () => void}) => {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
+            <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">
+                        Create New Industry
+                    </h2>
+                </div>
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <h3 className="text-lg font-semibold">
+                            Add New Industry
+                        </h3>
+                        <label className="block text-sm font-medium text-gray-700">
+                            Industry Name
+                            </label>
+                            <input 
+                            type="text"
+                            placeholder="e.g., EdTech, Real Estate, Construction"
+                            className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+                             />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Description (Optional)
+                        </label>
+                        <textarea 
+                        placeholder="Brief description of the industry"
+                        className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 resize-none"
+                        rows={3} 
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-6 flex justify-end space-x-3">
+                    <button
+                    onClick={onClose}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"                    
+                    >
+                        Cancel
+                    </button>
+
+                    <button
+                    className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"                    
+                    >
+                        Create Industry
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export default function IndustriesPage() {
     const [industries, setIndustries] = useState([
         {id: 1, name: "All Industries", count: 2},
@@ -10,6 +66,7 @@ export default function IndustriesPage() {
     ]);
 
     const [activeIndustry, setActiveIndustry] = useState(1);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const vendors = [
         {
@@ -51,7 +108,11 @@ export default function IndustriesPage() {
                             Browse vendors by industry type
                         </p>
                     </div>
-                    <button className="flex items-center gap-1 rounded-full bg-blue-500 px-4 py-2 text-white text-sm font-medium shadow hover:bg-blue-600">
+
+                    <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-1 rounded-full bg-blue-500 px-4 py-2 text-white text-sm font-medium shadow hover:bg-blue-600"
+                    >
                         <Plus className="w-4 h-4" /> Add Industry                    
                         </button>
                 </div>
@@ -147,6 +208,9 @@ export default function IndustriesPage() {
                 
                
                 </div>
+
+                {isModalOpen && <AddIndustryModal onClose={() => setIsModalOpen(false)} />}
                         </div>
-    )
+    );
+
 }
