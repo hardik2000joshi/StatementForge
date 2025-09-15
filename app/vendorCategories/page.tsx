@@ -3,6 +3,7 @@
 import Button from "@/components/ui/Button";
 import {Card, CardContent} from "@/components/ui/card";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 
 const categories = [
     {
@@ -32,6 +33,9 @@ const categories = [
 ];
 
 export default function vendorCategoriesPage() {
+
+    const [showModal, setShowModal] = useState(false);
+
     return (
         <div className="p-6">
             {/* Header */}
@@ -39,7 +43,9 @@ export default function vendorCategoriesPage() {
                 <h1 className="text-xl font-semibold">
                     Vendor Categories
                     </h1>
-                    <Button className="bg-blue-600 hover:bg-blue-700">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white"
+                    onClick={() => setShowModal(true)}
+                    >
                         <Plus className="h-4 w-4 mr-2"/> Add Category
                     </Button>
             </div>

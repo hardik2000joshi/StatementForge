@@ -4,7 +4,15 @@ import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 // Modal Component for adding a new Industry
-const AddIndustryModal = ({ onClose } : {onClose: () => void}) => {
+const AddIndustryModal = ({ onClose, onCreate } : {onClose: () => void; onCreate: (name:string) => void; }) => {
+    const [newIndustryName, setNewIndustryName] = useState("");
+    const handleCreate = () => {
+        if (newIndustryName.trim ()) {
+            onCreate(newIndustryName);
+            onClose();
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
             <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
@@ -24,6 +32,8 @@ const AddIndustryModal = ({ onClose } : {onClose: () => void}) => {
                             <input 
                             type="text"
                             placeholder="e.g., EdTech, Real Estate, Construction"
+                            value={newIndustryName}
+                            onChange={(e) => setNewIndustryName(e.target.value)}
                             className="w-full rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
                              />
                     </div>
@@ -49,6 +59,7 @@ const AddIndustryModal = ({ onClose } : {onClose: () => void}) => {
                     </button>
 
                     <button
+                    onClick={handleCreate}
                     className="rounded-md bg-blue-500 px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"                    
                     >
                         Create Industry
@@ -91,6 +102,18 @@ export default function IndustriesPage() {
         setIndustries(industries.filter((industry) => industry.id !== id));
     };
 
+    const handleAddIndustry = (newIndustryName: string) => {
+        const newId = industries.length > 0 ? Math.max(...industries.map(i => i.id)) + 1 : 1;
+        const newIndustry = {
+            id: newId,
+            name: newIndustryName,
+            count: 0
+        };
+        console.log("New Industry Added:", newIndustry);
+        setIndustries([...industries, newIndustry]);
+        setIsModalOpen(false);
+    };
+
     const filteredVendors = 
     activeIndustry === 1
     ? vendors
@@ -122,7 +145,7 @@ export default function IndustriesPage() {
                         <div
                         key={industry.id}
                         onClick={() => setActiveIndustry(industry.id)}
-                        className={`flex items-center justify-between rounded-full px-4 py-2 cursor-pointer $ {
+                        className={`flex items-center justify-between rounded-full px-4 py-2 cursor-pointer ${
                             activeIndustry === industry.id
                             ? "bg-blue-500 text-white"
                             : "bg-gray-100 text-black hover:bg-gray-200"
@@ -133,7 +156,7 @@ export default function IndustriesPage() {
                             </span>
                             <div className="flex items-center gap-3">
                                 <span
-                                className={`rounded-full px-2 py-0.5 text-xs font-semibold $ {
+                                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                                     activeIndustry === industry.id
                                     ? "bg-black text-white"
                                     : "bg-black text-white"
@@ -209,7 +232,7 @@ export default function IndustriesPage() {
                
                 </div>
 
-                {isModalOpen && <AddIndustryModal onClose={() => setIsModalOpen(false)} />}
+                {isModalOpen && <AddIndustryModal onClose={() => setIsModalOpen(false)}  onCreate={handleAddIndustry}/>}
                         </div>
     );
 
