@@ -119,8 +119,95 @@ export default function vendorCategoriesPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Description
                                 </label>
+                                <textarea 
+                                placeholder="Brief description of this category"
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                            </div>
+
+                            {/* Category Type */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Category Type
+                                </label>
+                                <select
+                                defaultValue=""
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                >
+
+                                    <option value="expense">
+                                        Expense - For vendors that generate debits
+                                    </option>
+
+                                    <option value="income">
+                                        Income - For vendors that generate credits
+                                    </option>
+
+                                    </select>
+                            </div>
+
+                            {/* Color Theme */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Color Theme
+                                </label>
+                                <select
+                                defaultValue=""
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                                >
+                                    <option value="grey">
+                                        Grey
+                                    </option>
+
+                                    <option value="blue">
+                                        Blue
+                                    </option>
+
+                                    <option value="green">
+                                        Green
+                                    </option>
+
+                                    <option value="yellow">
+                                        Yellow
+                                    </option>
+
+                                    <option value="purple">
+                                        Purple
+                                    </option>
+
+                                    <option value="red">
+                                        Red
+                                    </option>
+
+                                    <option value="emerald">
+                                        Emerald
+                                    </option>
+
+                                    <option value="indigo">
+                                        Indigo
+                                    </option>
+                                    
+                                    </select>
                             </div>
                         </form>
+
+                        {/* Footer */}
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                            type="button"
+                            onClick={() => setShowModal(false)}
+                            className="px-4 py-2 rounded-md border border-gray-300 text-sm"
+                            >
+                                 Cancel
+                            </button>
+
+                            <button
+                            type="submit"
+                            className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm hover:bg-blue-700"
+                            >
+                                 Create Category
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

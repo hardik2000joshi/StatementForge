@@ -69,6 +69,7 @@ export default function GeneratorPage () {
                     </Button>
                 </div>
             </div>
+            <br />
 
             {/* Smart Statement Generator */}
             <div className="rounded-2xl border bg-gray-50 p-6 shadow-sm">
@@ -273,6 +274,7 @@ export default function GeneratorPage () {
                 <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-2">
                     Generate Statement
                 </button>
+                <br />
 
                 {/* Generation Summary */}
                 <div className="rounded-2xl border p-6 shadow-sm">
@@ -325,6 +327,7 @@ export default function GeneratorPage () {
                         </div>
                     </div>
                 </div>
+                <br />
 
                 {/* Recent Generations */}
                 <div className="rounded-2xl border p-6 shadow-sm">
