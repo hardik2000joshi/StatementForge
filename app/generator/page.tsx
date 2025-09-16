@@ -10,6 +10,11 @@ interface Generation {
     date: string;
 }
 
+interface Preset {
+    name: string;
+    description: string;
+}
+
 
 export default function GeneratorPage () {
     const [recentGenerations] = useState<Generation[]>([
@@ -39,9 +44,37 @@ export default function GeneratorPage () {
             date: "8/14/2025, 4:52:14 PM",
         },
     ]);  
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+
+    const [showModal, setShowModal] = useState(false);
+
+    // form state
+
+    const [presetName, setPresetName] = useState("");
+    const [presetDesc, setPresetDesc] = useState("");
+    
+    // saved presets
+    const [presets, setPresets] = useState<Preset[]>([]);
+
+    const handleSavePreset = () => {
+        if (!presetName.trim())    // .trim() removes unwanted spaces
+            return alert("Preset Name is reuired");
+    
+
+    const newPreset: Preset = {
+        name: presetName.trim(),
+        description: presetDesc.trim(),
+    };
+
+    setPresets((prev) => [...prev, newPreset]);
+
+    // reset form + close modal
+    setPresetName("");
+    setPresetDesc("");
+    setShowModal(false);
+    };
+
     return (
-        <div className="p-6 space y-6">
+        <div className="p-6 space-y-6">
             <div className="rounded-2xl border bg-gray-50 p-6 shadow-sm">
                 <h2 className="text-lg font-semibold">
                     Generation Presets
@@ -55,6 +88,7 @@ export default function GeneratorPage () {
                     <Button
                     variant = "outline" 
                     className="flex items-center gap-2"
+                    onClick={() => setShowModal(true)}
                     >
                         <Save className="w-4 h-4" />
                         Save Preset
@@ -68,7 +102,89 @@ export default function GeneratorPage () {
                         Load Preset
                     </Button>
                 </div>
+
+                {/* Show Saved Presets */}
+
+                {presets.length > 0 && (
+                    <div className="mt-6">
+                        <h3 className="text-md font-medium mb-2">
+                            Saved Presets
+                        </h3>
+                        <ul className="space-y-2">
+                            {presets.map((p, i) => (
+                                <li
+                                key={i}
+                                className="rounded-lg border p-3 bg-white shadow-sm"
+                                >
+                                    <div className="font-semibold">
+                                        {p.name}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        {p.description}
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
+
+            {/* Modal */}
+            {showModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]">
+                    <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
+                        <h2 className="text-lg font-semibold mb-4">
+                            Save Generation Preset
+                        </h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Preset Name
+                                </label>
+                                <input 
+                                type="text"
+                                value={presetName}
+                                onChange={(e) => setPresetName(e.target.value)}
+                                placeholder="e.g., Monthly High Activity"
+                                className="w-full border rounded-full px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" 
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                     Description (optional)
+                                </label>
+
+                                <textarea 
+                                value={presetDesc}
+                                onChange={(e) => setPresetDesc(e.target.value)}
+                                placeholder="Describe when to use this preset..."
+                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                rows={3}
+                                 />
+                            </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="mt-6 flex justify-end gap-3">
+                            <Button 
+                            variant="outline"
+                            onClick={() => setShowModal(false)}
+                            >
+                                Cancel
+                            </Button>
+
+                            <Button 
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                            onClick={handleSavePreset}
+                            >
+                                Save Preset
+                            </Button>
+                        </div>
+                    </div>
+
+                </div>
+            )}
             <br />
 
             {/* Smart Statement Generator */}
