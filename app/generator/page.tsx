@@ -1,8 +1,9 @@
 "use client";
 
 import Button from "@/components/ui/Button";
-import { Download, DownloadIcon, Eye, Save } from "lucide-react";
+import { Download, DownloadIcon, Eye, Save, Trash2, X } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 interface Generation {
     id: string;
@@ -13,6 +14,8 @@ interface Generation {
 interface Preset {
     name: string;
     description: string;
+    badge: string;
+    createdAt: Date;
 }
 
 
@@ -46,6 +49,7 @@ export default function GeneratorPage () {
     ]);  
 
     const [showModal, setShowModal] = useState(false);
+    const [showLoadModal, setShowLoadModal] = useState(false);
 
     // form state
 
@@ -53,7 +57,14 @@ export default function GeneratorPage () {
     const [presetDesc, setPresetDesc] = useState("");
     
     // saved presets
-    const [presets, setPresets] = useState<Preset[]>([]);
+    const [presets, setPresets] = useState<Preset[]>([
+        {
+            name: "Monthly High Activity",
+            badge: "25 txns/week",
+            description: "shows the record of monthly transactions done",
+            createdAt: new Date("2025-09-16"),
+        }
+    ]);
 
     const handleSavePreset = () => {
         if (!presetName.trim())    // .trim() removes unwanted spaces
@@ -63,6 +74,8 @@ export default function GeneratorPage () {
     const newPreset: Preset = {
         name: presetName.trim(),
         description: presetDesc.trim(),
+        badge: "25 txns/week",
+        createdAt: new Date(),
     };
 
     setPresets((prev) => [...prev, newPreset]);
@@ -71,6 +84,14 @@ export default function GeneratorPage () {
     setPresetName("");
     setPresetDesc("");
     setShowModal(false);
+    };
+
+    const handleLoadPreset = (preset: Preset) => {
+        toast.success("Preset Loaded", {
+            description: `Settings from "${preset.name}" have been applied.`,
+            duration: 5000, // 5 Seconds
+        });
+        setShowLoadModal(false);
     };
 
     return (
@@ -97,6 +118,7 @@ export default function GeneratorPage () {
                     <Button
                     variant="outline"
                     className="flex items-center gap-2"
+                    onClick={() => setShowLoadModal(true)}
                     >
                         <Download className="w-4 h-4"/>
                         Load Preset
@@ -133,9 +155,18 @@ export default function GeneratorPage () {
             {showModal && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]">
                     <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
-                        <h2 className="text-lg font-semibold mb-4">
+                        <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-lg font-semibold">
                             Save Generation Preset
                         </h2>
+                        <button
+                        onClick={() => setShowModal(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        </div>
+
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -182,7 +213,80 @@ export default function GeneratorPage () {
                             </Button>
                         </div>
                     </div>
+                    </div>
+            )}
 
+            {/* Load Preset Modal */}
+            {showLoadModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-[9999]">
+                    <div className="bg-white rounded-2xl shadow-lg w-full max-w-lg p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-semibold">
+                            Load Generation Preset
+                        </h2>
+                        <button
+                        onClick={() => setShowLoadModal(false)}
+                        className="text-gray-500 hover:text-gray-700"
+                        >
+                            <X className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+                        </button>
+                        </div>
+
+                        {presets.length === 0 ? (
+                            <p className="text-sm text-gray-500">
+                                No presets saved yet.
+                            </p>
+                        ): (
+                            <div className="space-y-3">
+                                {presets.map((p, i) => (
+                                    <div
+                                    key={i}
+                                    onClick={() => handleLoadPreset(p)}
+                                    className="flex justify-between items-start rounded-xl border bg-gray-50 p-4 shadow-sm"
+                                    >
+                                        <div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="font-semibold">
+                                                    {p.name}
+                                                </span>
+                                                <span className="bg-black text-white text-xs px-2 py-1 rounded-full">
+                                                     25 txns/week
+                                                </span>
+                                            </div>
+
+                                            <p className="text-sm text-gray-600">
+                                                {p.description}
+                                            </p>
+
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Created {new Date().toLocaleDateString()}
+                                            </p>
+                                        </div>
+
+                                        {/* Delete Button */}
+                                        <button
+                                        onClick={() => 
+                                            setPresets((prev) => prev.filter((_, idx) => idx !== 1))
+                                        }
+                                        className="text-red-500 hover:text-red-700"
+                                        >
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        
+                        {/* Footer Button */}
+                        <div className="mt-6 flex justify-end gap-3">
+                            <Button
+                            variant="outline"
+                            onClick={() => setShowLoadModal(false)}
+                            >
+                                Close
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
             <br />
