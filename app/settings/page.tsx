@@ -170,6 +170,48 @@ export default function SettingsPage(){
                 </div>
 
                 {/* Application Information */}
+                <div className="p-6 bg-white rounded-lg shadow-md mt-6">
+                    <h2 className="text-xl font-semibold mb-4">
+                        Application Information
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-gray-600">
+                                Version:
+                            </p>
+                            <p className="font-medium text-gray-900">
+                                1.0.0
+                                </p>
+                        </div>
+
+                        <div>
+                            <p className="text-gray-600">
+                                Environment:
+                            </p>
+                            <p className="font-medium text-gray-900">
+                                Development
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-gray-600">
+                                Last Updated:
+                            </p>
+                            <p className="font-medium text-gray-900">
+                                9/18/2025
+                            </p>
+                        </div>
+
+                        <div>
+                            <p className="text-gray-600">
+                                Current Theme:
+                            </p>
+                            <p className="font-medium text-gray-900">
+                                Light
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
         </div>
