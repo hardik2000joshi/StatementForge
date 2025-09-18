@@ -1,7 +1,7 @@
 "use client";
+
 import { Edit, Plus, Trash, X } from "lucide-react";
-import { resolveMetadata } from "next/dist/lib/metadata/resolve-metadata";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import countryList from "react-select-country-list";
 
 interface CountryOption {
@@ -28,7 +28,8 @@ interface Company {
 }
 
 export default function CompaniesPage() {
-    const [companies, setCompanies] = useState<Company[]>([]);
+    const [companies, setCompanies] = useState<Company[]>([]); 
+
     const [newCompany, setNewCompany] = useState("");
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
@@ -56,6 +57,19 @@ export default function CompaniesPage() {
         []
     );
 
+    // use useEffect to load data from local storage
+    useEffect(() => {
+        const savedCompanies = localStorage.getItem("companies");
+        if (savedCompanies) {
+            setCompanies(JSON.parse(savedCompanies));
+        }
+    }, []);  // Empty Dependency array means this runs only once on client mount
+    
+    // use another useEffect to save data to local storage
+    useEffect (() => {
+        localStorage.setItem("companies", JSON.stringify(companies));
+    }, [companies]);
+
     const resetForm = () => {
          setCompanyName("");
         setRegistrationNumber("");
@@ -71,7 +85,6 @@ export default function CompaniesPage() {
         setIban("");
         setBic("");
         setCurrency("");
-        
     };
 
     const handleAddCompany = () => {
