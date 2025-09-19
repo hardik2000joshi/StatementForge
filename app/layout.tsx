@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "StatementForge",
+  title: "Finhelper",
   description: "Dashboard built with Next.js App Router",
   icons: {
     icon: "/favicon.ico",

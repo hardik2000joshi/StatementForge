@@ -24,7 +24,7 @@
           <h1 className="text-xl font-semibold flex items-center gap-2">
 
             <File className="h-5 w-5 text-blue-600"/>
-            Docuforge
+            Finhelper
             </h1> 
 
             <div className="flex items-center gap-4">
@@ -33,7 +33,7 @@
               >
                 <Settings className="h-5 w-5 text-gray-600"/>
                 </Link>
-                
+
               <button className="p-2 rounded-full hover:bg-gray-100">
                 <User className="h-5 w-5 text-gray-600"/>
               </button>

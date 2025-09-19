@@ -28,13 +28,23 @@ interface Company {
 }
 
 export default function CompaniesPage() {
-    const [companies, setCompanies] = useState<Company[]>([]); 
+    const [companies, setCompanies] = useState<Company[]>(() => {
+        // only run this code on client side
+        if (typeof window !== "undefined") {
+            const savedCompanies = localStorage.getItem("companies");
+            if (savedCompanies) {
+                return JSON.parse(savedCompanies);
+            }
+        }
+        return [];
+    });
 
-    const [newCompany, setNewCompany] = useState("");
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const [showInput, setShowInput] = useState(false);
     const [editingCompanyId, setEditingCompanyId] = useState<number | null>(null); 
+    const [showToast, setShowToast] = useState(false); // New state for toast
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [companyToDelete, setCompanyToDelete] = useState<Company | null> (null);
 
     // form states
     const [companyName, setCompanyName] = useState("");
@@ -57,18 +67,20 @@ export default function CompaniesPage() {
         []
     );
 
-    // use useEffect to load data from local storage
-    useEffect(() => {
-        const savedCompanies = localStorage.getItem("companies");
-        if (savedCompanies) {
-            setCompanies(JSON.parse(savedCompanies));
-        }
-    }, []);  // Empty Dependency array means this runs only once on client mount
-    
-    // use another useEffect to save data to local storage
+    // useEffect hook to save companies to localStorage whenever the companies state changes    
     useEffect (() => {
         localStorage.setItem("companies", JSON.stringify(companies));
     }, [companies]);
+
+    // New useEffect to handle toast visibility:
+    useEffect(() => {
+        if (showToast) {
+            const timer = setTimeout(() => {
+                setShowToast(false);
+            }, 10000); // Toast disappears after 10 seconds
+            return () => clearTimeout(timer);
+        }
+    }, [showToast]);
 
     const resetForm = () => {
          setCompanyName("");
@@ -164,15 +176,25 @@ export default function CompaniesPage() {
         resetForm();
         setEditingCompanyId(null);
         setShowModal(false);
+        setShowToast(true); // show toast notification
     };
 
-    const handleDeleteClick = (companyId: number) => {
-        setCompanies(companies.filter(c => c.id !== companyId));
+    const handleDeleteClick = (company: Company) => {
+        setCompanyToDelete(company);
+        setShowDeleteModal(true);
     };
 
     const filteredCompanies = companies.filter((c) =>
         c.companyName.toLowerCase().includes(search.toLowerCase())
     );
+
+    const handleConfirmDelete = () => {
+        if (companyToDelete) {
+            setCompanies(companies.filter((c) => c.id !== companyToDelete.id));
+            setShowDeleteModal(false);
+            setCompanyToDelete(null);
+        }
+    };
 
     return (
         <div className="p-6 space-y-6">
@@ -222,7 +244,7 @@ export default function CompaniesPage() {
                             </button>
 
                             <button 
-                            onClick={() => handleDeleteClick(c.id)} 
+                            onClick={() => handleDeleteClick(c)} 
                             className="p-1 text-red-600 hover:text-red-800"
                             >
                                 <Trash className="h-4 w-4" />
@@ -615,6 +637,57 @@ export default function CompaniesPage() {
                                 className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
                             >
                                 {editingCompanyId !== null ? "Update Company" : "Create Company"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Toast Notification */}
+            {showToast && (
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl p-4 transition-all duration-300 ease-in-out z-50">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col">
+                            <h4 className="text-lg font-semibold text-gray-900">
+                                Success
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                                    Company updated successfully
+                            </p>
+                        </div>
+                        <button
+                        onClick={() => setShowToast(false)}
+                        className="text-gray-400 hover:text-gray-600"
+                        >
+                            <X className="h-5 w-5"/>
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Model */}
+            {showDeleteModal && companyToDelete && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-2xl shadow-lg w-full max-w-sm p-6 relative">
+                        <p className="text-gray-600 mb-6">
+                            Are you sure you want to delete "{companyToDelete.companyName}" ? This action cannot be undone.
+                        </p>
+
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => {
+                                setShowDeleteModal(false);
+                                setCompanyToDelete(null);
+                            }}
+                            className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                            onClick={handleConfirmDelete}
+                            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                            >
+                                Delete
                             </button>
                         </div>
                     </div>
