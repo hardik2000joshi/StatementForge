@@ -1,6 +1,6 @@
 "use client";
 
-import {Building2, File, Globe, Mail, UserIcon } from "lucide-react";
+import {Building2, File, FileText, Globe, Mail, PenTool, UserIcon } from "lucide-react";
 import { useState } from "react";
 
 // Mock data to stimulate user details and activity
@@ -35,6 +35,12 @@ const mockActivity = [
         transactions: "85"
     },
 ];
+
+const mockSummary = {
+    companiesCreated: 3,
+    templatesUploaded: 5,
+    statementsGenerated: 20,
+};
 
 export default function UserPage() {
     const [currency, setCurrency] = useState("USD");
@@ -149,6 +155,82 @@ export default function UserPage() {
                 </div>
                 </div>
 
+                {/* Summary Statistics */}
+
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4"> 
+                        <FileText className="h-5 w-5 text-gray-500"/>
+                        Summary
+                    </h2>
+
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-3xl font-bold text-blue-600">
+                                {mockSummary.companiesCreated}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                                Companies
+                            </p>
+                        </div>
+
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                            <p className="text-3xl font-bold text-blue-600">
+                                {mockSummary.templatesUploaded}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                                Templates
+                            </p>
+                        </div>
+
+                        <div className="bg-blue-50 p-4 rounded-lg col-span-2">
+                            <p className="text-3xl font-bold text-blue-600">
+                                {mockSummary.statementsGenerated}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                                Statements
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quick Actions */}
+
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 className="ftext-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                        <PenTool className="h-5 w-5 text-gray-500"/>
+                        Quick Actions
+                    </h2>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <button className="flex items-center justify-between p-4 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                            <span className="text-sm font-medium text-gray-800">
+                                Generate New Statement
+                            </span>
+
+                            <PenTool className="h-5 w-5 text-gray-500" />
+                        </button>
+
+                        <button className="flex items-center justify-between p-4 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                            <span className="text-sm font-medium text-gray-800">
+                                Manage Companies
+                            </span>
+
+                            <Building2 className="h-5 w-5 text-gray-500" />
+                        </button>
+
+                        <button className="flex items-center justify-between p-4 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
+                            <span className="text-sm font-medium text-gray-800">
+                                Manage Templates
+                            </span>
+
+                            <FileText className="h-5 w-5 text-gray-500" />
+                        </button>
+                    </div>
+                </div>
+
                 {/* Recent Activity */}
                 <div className="bg-white p-6 rounded-lg shadow-sm col-span-1 lg:col-span-1">
                     <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
@@ -180,6 +262,34 @@ export default function UserPage() {
                                 </li>
                             ))}
                     </ul>
+                </div>
+
+                {/* Authentication & Security */}
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2 mb-4">
+                        <UserIcon className="h-5 w-5 text-gray-600" />
+                        Authentication
+                    </h2>
+
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between text-gray-600">
+                            <span className="text-sm font-medium">
+                                Last Login:
+                            </span>
+
+                            <span className="text-sm text-gray-500">
+                                {new Date().toLocaleDateString()}
+                            </span>
+                        </div>
+
+                        <button className="w-full text-center py-2 px-4 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600 transition:colors">
+                            Change Password
+                        </button>
+
+                        <button className="w-full text-center py-2 px-4 rounded-lg bg-gray-200 text-gray-800 font-medium hover:bg-gray-300 transition-colors">
+                            Log Out                            
+                        </button>
+                    </div>
                 </div>
         </div>
     );
