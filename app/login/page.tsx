@@ -1,6 +1,27 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useUser } from "../context/userContext";
+
 export default function LoginPage() {
+    const router = useRouter();
+    const {loginUser} = useUser();
+    
+    function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+    
+
+    const userData = {
+        name: "John Doe",
+        email: "john.doe@finhelper.com",
+        role: "QA Head",
+        organization: "Finhelper, Inc.",
+    };
+    
+    loginUser(userData);
+    router.push("/myAccount");
+}
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
             <div className="w-full max-w-sm rounded-lg bg-white p-6 text-center shadow-lg">
@@ -12,7 +33,10 @@ export default function LoginPage() {
                     Welcome back, we hope you're having a great day.
                 </p>
 
-                <form className="space-y-4">
+                <form 
+                onSubmit={handleSubmit}
+                className="space-y-4"
+                >
                     <div>
                         <label
                         htmlFor="email"
