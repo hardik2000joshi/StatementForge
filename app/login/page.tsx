@@ -46,7 +46,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="flex justify-between">
-                        <a href="#"
+                        <a href="/forgotPassword"
                         className="text-sm font-medium text-blue-600 hover:text-blue-500"
                         >
                             Forgot your password?
