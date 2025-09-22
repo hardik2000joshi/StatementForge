@@ -1,6 +1,6 @@
   "use client";
 
-  import { Briefcase, Building2, Factory, File, FileText, Icon, PenTool, Settings, Tags, User } from "lucide-react";
+  import { Briefcase, Building2, Factory, File, FileText, LogIn, PenTool, Settings, Tags, User } from "lucide-react";
   import Link from "next/link";
   import { usePathname } from "next/navigation";
 
@@ -39,7 +39,22 @@
               className="p-2 rounded-full hover:bg-gray-100">
                 <User className="h-5 w-5 text-gray-600"/>
               </Link>
+
+              <Link
+              href="/sign-up"
+              className="p-2 rounded-full hover:bg-gray-100"
+              >
+                Sign Up
+              </Link>
+
+              <Link
+              href="/login"
+              className="p-2 rounded-full hover:bg-gray-100"
+              >
+                Login
+              </Link>
             </div>
+            
         </header>
 
         {/* Horizontal Nav*/}
