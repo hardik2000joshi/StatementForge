@@ -9,9 +9,15 @@ export default function MyAccountPage() {
     const {user, logoutUser} = useUser();
     const router = useRouter();
 
+    // prevent flicker: render nothing while redirecting
     if (!user) {
-        router.push("/login");
-        return null;
+        return(
+            <div className="flex items-center justify-center h-screen">
+                <p className="text-gray-600">
+                    You must log in to access this page
+                </p>
+            </div>
+        );
     }
 
     return(
@@ -117,7 +123,7 @@ export default function MyAccountPage() {
             <button
             onClick={() => {
                 logoutUser();
-                router.push("/login");
+                router.push("/logout");
             }}
             className="mt-6 w-full rounded-lg bg-gray-200 px-4 py-2 text-gray-800 hover:bg-gray-300"
             >
