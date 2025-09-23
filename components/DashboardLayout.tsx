@@ -134,7 +134,7 @@
 
                 <li>
                   <Link 
-                  href="/"
+                  href="/contactUs"
                   className="hover:text-blue-600 underline"
                   >
                   Contact Us
