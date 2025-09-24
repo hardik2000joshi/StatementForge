@@ -17,14 +17,6 @@ interface UserContextType {
     logoutUser: () => void;
 }
 
-// Mock user data for demonstration
-const mockUser: User = {
-    name: "Finhelper User",
-    email: "user@finhelper.com",
-    role: "User",
-    organization: "Finhelper, Inc.",
-};
-
 // User Context with a default value
 const UserContext = createContext<UserContextType | null>(null);
 
@@ -39,10 +31,8 @@ export const UserProvider = ({children}: {children:ReactNode}) => {
         setUser(null);
     };
 
-    const value = {user, loginUser, logoutUser};
-
     return (
-        <UserContext.Provider value={value}> 
+        <UserContext.Provider value={{user, loginUser, logoutUser}}> 
             {children}
         </UserContext.Provider>
     );
@@ -50,8 +40,6 @@ export const UserProvider = ({children}: {children:ReactNode}) => {
 
 export const useUser = () => {
     const context = useContext(UserContext);
-    if (context === null) {
-        throw new Error('useUser must be used within a UserProvider');
-    }
+    if (!context) throw new Error("useUser must be used inside UserProvider");
     return context;
 };
