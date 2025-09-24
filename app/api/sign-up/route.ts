@@ -8,9 +8,10 @@ export async function POST(req: Request) {
         const db = client.db("myAccountDB");
         const usersCollection = db.collection("Users");
 
-        const {firstName, lastName, email, password} = await req.json();
+        // Include fiels in request body
+        const {firstName, lastName, email, password, role, organization} = await req.json();
 
-        if (!firstName || !lastName || !email || !password) {
+        if (!firstName || !lastName || !email || !password || !role || !organization) {
             return NextResponse.json(
                 {error: "All fields are required"},
                 {status: 400}           
@@ -33,8 +34,8 @@ export async function POST(req: Request) {
             name: `${firstName} ${lastName}`,
             email,
             password: hashedPassword,
-            role: "User",
-            organization: null,
+            role,
+            organization,
             createdAt: new Date(),
         };
 
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        organization: newUser.organization,
       },
       { status: 201 }
     );

@@ -7,6 +7,8 @@ export default function SignUpPage() {
     const [lastName, setLastName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [organization, setOrganization] = useState("");
+    const [role, setRole] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const router = useRouter();
@@ -26,7 +28,9 @@ export default function SignUpPage() {
                     firstName,
                     lastName,
                     email,
-                    password
+                    password,
+                    organization,
+                    role,
                 }),
             });
 
@@ -37,7 +41,9 @@ export default function SignUpPage() {
                 setLastName("");
                 setEmail("");
                 setPassword("");
-          
+                setOrganization("");
+                setRole("");
+
             // Auto redirect after 6 seconds
             setTimeout(() => {
                 router.push("/login");
@@ -131,6 +137,7 @@ export default function SignUpPage() {
                     <div>
                         <label 
                         htmlFor="password"
+                        className="mb-1 block text-left text-sm font-medium text-gray-700"
                         >
                             Password
                         </label>
@@ -146,6 +153,40 @@ export default function SignUpPage() {
                         required
                         className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500" 
                         /> 
+                    </div>
+
+                    <div>
+                        <label 
+                        htmlFor="Organization"
+                        className="mb-1 block text-left text-sm font-medium text-gray-700"
+                        >
+                            Organization
+                        </label>
+
+                        <input type="text" 
+                        placeholder="ABC Ltd"
+                        value={organization}
+                        onChange={(e) => setOrganization(e.target.value)}
+                        required
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500" 
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="Role"
+                        className="mb-1 block text-left text-sm font-medium text-gray-700"
+                        >
+                            Role
+                        </label>
+
+                        <input 
+                        type="text"
+                        placeholder="Team Head"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        required 
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500" 
+                        />
                     </div>
 
                     {
