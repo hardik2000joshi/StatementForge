@@ -1,8 +1,17 @@
 "use client";
 
+declare module "jspdf" {
+    interface jsPDF {
+        lastAutoTable: {
+            finalY: number;
+        };
+    }
+}
 import { Download, Eye, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function InvoicesPage() {
     const [invoices, setInvoices] = useState([
@@ -45,10 +54,45 @@ export default function InvoicesPage() {
     };
 
     const filteredInvoices = invoices.filter(
-        (invoice) => 
+        invoice => 
             invoice.id.toLowerCase().includes(search.toLowerCase()) || 
         invoice.title.toLowerCase().includes(search.toLowerCase())
     );
+
+    // Generate and download PDF
+    const downloadInvoice = (invoice: typeof invoices[0]) => {
+        const doc = new jsPDF();
+
+        // Title
+        doc.setFontSize(18);
+        doc.text("Invoice", 105, 20, {align: "center"});
+
+        doc.setFontSize(12);
+        doc.text(`Invoice ID: ${invoice.id}`, 20, 40);
+        doc.text(`Title: ${invoice.title}`, 20, 50);
+        doc.text(`Date: ${invoice.date}`, 20, 60);
+        doc.text(`Created: ${invoice.created}`, 20, 70);
+
+        // Table Section 
+        autoTable(doc, {
+            startY: 90,
+            head: [["Item", "Description", "Amount"]],
+            body: [
+                ["1", invoice.title, invoice.amount],
+            ],
+            theme: "grid",
+            styles: {halign: "center"},
+            headStyles: {fillColor: [22, 160, 133]},
+        }
+        );
+
+        const finalY = (doc as any).lastAutoTable?.finalY || 90;
+        // Footer / Total
+        
+        doc.text(`Total: ${invoice.amount}`, 160, doc.lastAutoTable.finalY + 20);
+
+        doc.save(`${invoice.id}.pdf`);
+    };
 
     return (
         <div className="p-6 space y-6">
@@ -121,7 +165,9 @@ export default function InvoicesPage() {
                                 <button className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-1000">
                                     <Eye className="w-4 h-4" /> Preview
                                 </button>
-                                <button className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-100">
+                                <button
+                                onClick={() => downloadInvoice(invoice)} 
+                                className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-100">
                                     <Download className="w-4 h-4" /> Download
                                 </button>
                             </div>
