@@ -1,6 +1,6 @@
 import clientPromise from "@/lib/db";
-import { error } from "console";
 import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
     try {
@@ -26,11 +26,13 @@ export async function POST(req: Request) {
             );
         }
 
+        // Hash the password before saving
+        const hashedPassword = await bcrypt.hash(password, 10);
         // insert new user
         const newUser = {
             name: `${firstName} ${lastName}`,
             email,
-            password,
+            password: hashedPassword,
             role: "User",
             organization: null,
             createdAt: new Date(),

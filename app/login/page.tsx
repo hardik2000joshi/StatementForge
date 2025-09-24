@@ -32,7 +32,7 @@ export default function LoginPage() {
       loginUser(data);
 
       // Redirect to home
-      router.push("/");
+      router.push("/myAccount");
     }
     catch(err) {
         setError("something went wrong");
