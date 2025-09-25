@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice</title>
+    <link rel="stylesheet" href="basic_invoice_template.css">
+</head>
+<body>
+    <header class="header">
+        <h1 class="company-name">
+            Acme Services Ltd
+        </h1>
+        <p class="company-details">
+             123 Main Street, London, UK <br>
+      Phone: +44 1234 567890 | Email: info@acme.com
+        </p>
+    </header>
+
+    <h2 class="invoice-title">
+        INVOICE
+    </h2>
+
+    <section class="invoice-info">
+        <div>
+            <h3>
+                Billed To:
+            </h3>
+            <p>
+                John Doe <br>
+                456 Client Street <br>
+                Manchester, UK
+            </p> 
+        </div>
+
+        <div>
+            <h3>Invoice Details</h3>
+            <p>
+                Invoice No: INV-2025-001 <br>
+                Date: 24 Sept 2025 <br>
+                Due: 30 Sept 2025
+            </p>
+        </div>
+    </section>
+
+    <table class="invoice-table">
+        <thead>
+        <tr>
+            <th>
+                Description
+            </th>
+
+            <th>
+                Qty
+            </th>
+
+            <th>
+                Rate
+            </th>
+
+            <th>
+                Total
+            </th>
+        </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>
+                    Website Design
+                </td>
+
+                <td>
+                    1
+                </td>
+
+                <td>
+                    500.00
+                </td>
+
+                <td>
+                    500.00
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    Hosting (1 year)
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    120.00
+                </td>
+                <td>
+                    120.00
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    Domain Name
+                </td>
+                <td>
+                    1
+                </td>
+                <td>
+                    15.00
+                </td>
+                <td>
+                    15.00
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="Totals">
+        <p>
+            <strong>
+            Subtotal:
+            </strong>
+            635.00
+        </p>
+        <p>
+            <strong>
+                Tax (20%):
+            </strong>
+            127.00
+        </p>
+        <p class="grand-total">
+            <strong>
+                Total Due:
+            </strong>
+            762.00
+        </p>
+    </div>
+
+    <footer class="footer">
+        <p>
+            Payment due within 7 days. Late payments may be subject to fees
+        </p>
+        <p>
+            Thank you for your business!
+        </p>
+    </footer>
+</body>
+</html>

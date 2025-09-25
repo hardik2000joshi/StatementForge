@@ -7,7 +7,7 @@ declare module "jspdf" {
         };
     }
 }
-import { Download, Eye, Search, Trash2 } from "lucide-react";
+import { AlignCenter, Download, Eye, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import jsPDF from "jspdf";
@@ -94,6 +94,31 @@ export default function InvoicesPage() {
         doc.save(`${invoice.id}.pdf`);
     };
 
+    const previewInvoice = (invoice: typeof invoices[0]) => {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("Invoice", 105, 20, {align: "center"});
+
+        doc.setFontSize(12);
+        doc.text(`Invoice ID: ${invoice.id}`, 20, 40);
+        doc.text(`Title: ${invoice.title}`, 20, 50);
+        doc.text(`Date: ${invoice.date}`, 20, 60);
+        doc.text(`Created: ${invoice.created}`, 20, 70);
+
+        autoTable(doc, {
+            startY: 90,
+            head: [["Item", "Description", "Amount"]],
+            body: [["1", invoice.title, invoice.amount]],
+            theme: "grid",
+            styles: {halign: "center"},
+            headStyles: {fillColor: [22, 160, 133]},
+        });
+
+        // open in new tab
+        window.open(doc.output("bloburl"), "_blank");
+        };
+
     return (
         <div className="p-6 space y-6">
             {/* Header */}
@@ -162,9 +187,13 @@ export default function InvoicesPage() {
                                 <p className="text-red-500 font-semibold">
                                     {invoice.amount}
                                 </p>
-                                <button className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-1000">
-                                    <Eye className="w-4 h-4" /> Preview
-                                </button>
+                                <button 
+                                onClick={() => previewInvoice(invoice)}
+                                className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-1000">
+                                    <Eye className="w-4 h-4" /> 
+                                    Preview
+                                </button>                                
+                                
                                 <button
                                 onClick={() => downloadInvoice(invoice)} 
                                 className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-100">
