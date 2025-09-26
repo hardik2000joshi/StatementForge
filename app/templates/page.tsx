@@ -3,6 +3,7 @@
 import { Edit, Eye, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 import NewTemplateForm from "@/components/NewTemplateForm";
+import BankStatementTemplatePage from "@/components/BankStatementTemplate";
 
 interface Template {
     id: number;
@@ -24,8 +25,15 @@ export default function TemplatesPage() {
     const [showForm, setShowForm] = useState(false);
 
     // save new template
-    const handleSaveTemplate = (template: Template) => {
-        setTemplate([...templates, template]);
+    const handleSaveTemplate = (payload: any) => {
+        const newTemplate: Template = {
+            id: Date.now(),
+            name: payload.name,
+            category: payload.type,
+            htmlFile: payload.htmlFile || null,
+            cssFile: payload.cssFile || null,
+        };
+        setTemplate((prev) => [...prev, newTemplate]);
         setShowForm(false);
     }  
 
@@ -59,11 +67,28 @@ export default function TemplatesPage() {
         t.name.toLowerCase().includes(search.toLowerCase())
     );
 
-
+    const [viewingTemplate, setViewingTemplate] = useState<Template | null> (null);
 
     return (
     <div className="p-6">
-        {! showForm ? (
+
+        {viewingTemplate ? (
+            <div>
+        <button
+          onClick={() => setViewingTemplate(null)}
+          className="mb-4 px-4 py-2 bg-gray-300 rounded"
+        >
+          Back
+        </button>
+
+        <BankStatementTemplatePage templateName={viewingTemplate.name.toString()} />
+      </div>
+        ): showForm ? (
+            <NewTemplateForm 
+        onSave={handleSaveTemplate} 
+        onCancel={() => setShowForm(false)} 
+        /> 
+        ) : (
             <>
             <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold mb-4">
@@ -77,8 +102,8 @@ export default function TemplatesPage() {
             Add Template
             </button>   
         </div>
-
-        {/* Search */}
+        
+        
         <div className="mb-6">
             <input 
             type="text" 
@@ -105,8 +130,10 @@ export default function TemplatesPage() {
                             </div>
                             </div>
 
-                    <div className="flex gap-3 items-center">
-                        <button className="text-green-600 hover: text-green-800">
+                            <div className="flex gap-3 items-center">
+                        <button
+                        onClick={() => setViewingTemplate(template)} 
+                        className="text-green-600 hover: text-green-800">
                             <Eye className="h-5 w-5" />
                         </button>
 
@@ -128,7 +155,6 @@ export default function TemplatesPage() {
                         >
                             <Trash className="h-5 w-5" />
                         </button>
-
                     </div>
                 </div>
             ))}
@@ -138,11 +164,8 @@ export default function TemplatesPage() {
         )}
         </div>
         </>
-        ): (
-            <NewTemplateForm 
-            onSave={handleSaveTemplate} onCancel={() => setShowForm(false)} />
-        )}
-        </div>
-);
+)}
+</div>
+    );
 }
 

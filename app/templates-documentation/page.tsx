@@ -115,6 +115,28 @@ export default function TemplateDocumentationPage() {
                     File size: up to 2MB.
                 </li>
             </ul>
-        </div>
+            <br />
+
+            {/* Notes */}
+            <div className="bg-yellow-50 border border-yellow-300 p-4 rounded-lg">
+                <h3 className="font-semibold text-yellow-800 mb-2">
+                    Important Notes
+                </h3>
+                <ul className="list-disc pl-5 text-yellow-900 space-y-1">
+                    <li>
+                        Templates are processed server-side for security.
+                    </li>
+                    <li>
+                        JavaScript execution is disabled in templates.
+                    </li>
+                    <li>
+                        External resources (fonts, scripts) may be blocked.
+                    </li>
+                    <li>
+                        Test templates thoroughly before production use.
+                    </li>
+                </ul>
+            </div>
+            </div>
     );
 }
