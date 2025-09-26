@@ -4,6 +4,7 @@ import { Edit, Eye, Plus, Trash } from "lucide-react";
 import { useState } from "react";
 import NewTemplateForm from "@/components/NewTemplateForm";
 import BankStatementTemplatePage from "@/components/BankStatementTemplate";
+import InvoiceTemplatePage from "@/components/InvoiceTemplate";
 
 interface Template {
     id: number;
@@ -21,7 +22,14 @@ export default function TemplatesPage() {
             name: "Basic Bank Statement",
             category: "Bank Statement"
         },
+
+        {
+            id: 2,
+            name: "Standard Invoice",
+            category: "Invoice"
+        },
     ]);
+
     const [showForm, setShowForm] = useState(false);
 
     // save new template
@@ -81,8 +89,20 @@ export default function TemplatesPage() {
           Back
         </button>
 
-        <BankStatementTemplatePage templateName={viewingTemplate.name.toString()} />
+        {/* Conditional Rendering based on category */}
+        {
+            viewingTemplate.category === "Bank Statement" ? (
+                <BankStatementTemplatePage templateName={viewingTemplate.name.toString()} />
+            ) : viewingTemplate.category === "Invoice" ? (
+                <InvoiceTemplatePage templateName={viewingTemplate.name.toString()} />
+            ) : (
+                <div className="p-4 bg-yellow-100 rounded">
+                    Unsupported Template Type
+                </div>
+            )}
+
       </div>
+
         ): showForm ? (
             <NewTemplateForm 
         onSave={handleSaveTemplate} 
