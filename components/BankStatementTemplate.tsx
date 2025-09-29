@@ -215,7 +215,7 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                         </p>
 
                         <p>
-                            Total Debits: $11,055.00
+                            Total Debits:$11,055.00
                         </p>
                     </div>
 

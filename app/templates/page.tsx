@@ -1,74 +1,69 @@
 "use client";
 
 import { Edit, Eye, Plus, Trash } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NewTemplateForm from "@/components/NewTemplateForm";
 import BankStatementTemplatePage from "@/components/BankStatementTemplate";
 import InvoiceTemplatePage from "@/components/InvoiceTemplate";
 
 interface Template {
-    id: number;
-    name: String;
-    category: String;
-    htmlFile?: File | null;
-    cssFile?: File | null;
+    _id?: string;
+    name: string;
+    category: string;
+    htmlFile?: string;
+    cssFile?: string;
 }
 
 export default function TemplatesPage() {
     const [search, setSearch] = useState("");
-    const [templates, setTemplate] = useState<Template[]>([
-        {
-            id: 1,
-            name: "Basic Bank Statement",
-            category: "Bank Statement"
-        },
-
-        {
-            id: 2,
-            name: "Standard Invoice",
-            category: "Invoice"
-        },
-    ]);
-
+    const [templates, setTemplates] = useState<Template[]>([]);
     const [showForm, setShowForm] = useState(false);
 
-    // save new template
-    const handleSaveTemplate = (payload: any) => {
-        const newTemplate: Template = {
-            id: Date.now(),
-            name: payload.name,
-            category: payload.type,
-            htmlFile: payload.htmlFile || null,
-            cssFile: payload.cssFile || null,
-        };
-        setTemplate((prev) => [...prev, newTemplate]);
-        setShowForm(false);
-    }  
+    // Fetch Templates from API
+    useEffect(() => {
+        fetch("/api/templates")
+        .then((res) => res.json())
+        .then((data) => {
+            if(data.success) setTemplates(data.data); 
+        });
+    }, []);
 
-    // Add Template
+    // save new template
+    const handleSaveTemplate = (savedTemplate: any) => {
+        setTemplates(prev => [...prev, savedTemplate]);
+        setShowForm(false);
+    }
+    
+     // Add Template
     const handleAddTemplate = () => {
-        const newTemplate: Template = {
-            id: Date.now(),
-            name: `New Template ${templates.length + 1}`,
-            category: "Custom",
-        };
-        setTemplate([...templates, newTemplate]);
+        setShowForm(true);
     };
 
     // Delete Template
 
-    const handleDelete = (id: number) => {
-        setTemplate(templates.filter((t) => t.id !== id));
+    const handleDelete = async(id: string) => {
+        const res = await fetch(`/api/templates/${id}`, {method: "DELETE"});
+        const data = await res.json();
+        if (data.success) {
+            setTemplates(templates.filter((t) => t._id !== id));
+        }
+        else {
+      alert("Failed to delete");
+    }
     };
 
     //upload/Edit File
-    const handleFileChange = (id: number, file: File) => {
-        setTemplate(
+    const handleFileChange = (id: string, file:File, type:"htmlFile" | "cssFile") => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            setTemplates(
             templates.map((t) => 
-                t.id === id ? {...t, file} : t
+                t._id === id ? {...t, [type]: reader.result as string} : t
             )
         );
     };
+    reader.readAsText(file);
+        };
 
     // Filtered Templates
     const filteredTemplates = templates.filter((t) => 
@@ -138,7 +133,7 @@ export default function TemplatesPage() {
         <div className="space-y-4">
             {filteredTemplates.map((template) => (
                 <div
-                key={template.id}
+                key={template._id}
                 className="flex items-center justify-between bg-gray-50 p-4 rounded-lg border"
                 >
                     <div>
@@ -163,14 +158,14 @@ export default function TemplatesPage() {
                             accept=".pdf, .png, .jpg"
                             className="hidden"
                             onChange={(e) => 
-                                e.target.files && handleFileChange(template.id, e.target.files[0])
+                                e.target.files && handleFileChange(template._id!, e.target.files[0], "htmlFile")
                             }
                             />
                         </label>
 
                         {/* Delete */}
                         <button
-                        onClick={() => handleDelete(template.id)}
+                        onClick={() => handleDelete(template._id!)}
                         className="text-red-600 hover: text-red-800"
                         >
                             <Trash className="h-5 w-5" />
@@ -188,4 +183,3 @@ export default function TemplatesPage() {
 </div>
     );
 }
-

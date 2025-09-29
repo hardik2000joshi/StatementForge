@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 
-export default function NewTemplateForm({ onSave, onCancel }: { onSave: (template: any) => void, onCancel: () => void }) {
+interface Props {
+    onSave: (template: any) => void;
+    onCancel: () => void;
+}
+
+export default function NewTemplateForm({ onSave, onCancel }: Props) {
     const [name, setName] = useState("");
     const [type, setType] = useState("Bank Statement");
     const [htmlFile, setHTMLFile] = useState<File | null>(null);
@@ -12,9 +17,55 @@ export default function NewTemplateForm({ onSave, onCancel }: { onSave: (templat
     const htmlRef = useRef<HTMLInputElement | null>(null);
     const cssRef = useRef<HTMLInputElement | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const readFileAsText = (file: File) : Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+        });
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ name, type, htmlFile, cssFile })
+
+        try {
+            let htmlContent: string | null = null;
+            let cssContent: string | null = null;
+
+            if(htmlFile) htmlContent = await readFileAsText(htmlFile);
+            if(cssFile) cssContent = await readFileAsText(cssFile);
+
+            const res = await fetch("/api/templates", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    name,
+                    category: type,
+                    htmlFile: htmlContent,
+                    cssFile: cssContent,
+                }),
+            });
+
+            const data = await res.json();
+            if (!data.success){
+                throw new Error("Failed to save template");
+            }
+
+            onSave({
+                _id: data.insertedId,
+                name,
+                category: type,
+                htmlFile: htmlContent,
+                cssFile: cssContent,
+            });
+        }
+        catch(err) {
+            console.error(err);
+            alert("Failed to save template");
+        }
     }
 
     return (
@@ -268,5 +319,5 @@ export default function NewTemplateForm({ onSave, onCancel }: { onSave: (templat
                 </div>
             </form>
         </div>
-    )
+    );
 }
