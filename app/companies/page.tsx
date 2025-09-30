@@ -10,7 +10,7 @@ interface CountryOption {
 }
 
 interface Company {
-    id: number;
+    _id?: string;
     companyName: string;
     registrationNumber: string;
     industryType: string;
@@ -28,23 +28,78 @@ interface Company {
 }
 
 export default function CompaniesPage() {
-    const [companies, setCompanies] = useState<Company[]>(() => {
-        // only run this code on client side
-        if (typeof window !== "undefined") {
-            const savedCompanies = localStorage.getItem("companies");
-            if (savedCompanies) {
-                return JSON.parse(savedCompanies);
-            }
+    const [companies, setCompanies] = useState<Company[]>([]);
+    const [loading, setLoading] = useState(true);
+    useEffect(() => {
+        fetchCompanies();
+    }, []);
+
+    const fetchCompanies = async () => {
+        setLoading(true);
+        const res = await fetch("/api/companies");
+        const data = await res.json();
+        if (data.success) {
+            setCompanies(data.data);
         }
-        return [];
-    });
+        setLoading(false);
+    };
+
+    const addCompany = async (company: Company) => {
+        const res = await fetch("/api/companies", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(company),
+        });
+        const data = await res.json();
+        if (data.success)
+            fetchCompanies();
+        resetForm();
+        setShowModal(false);
+        setToastMessage("Company Created Successfully");
+        setShowToast(true);
+    };
+
+    const updateCompany = async(id: string, company: Company) => {
+        const res = await fetch(`/api/companies?id=${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(company),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            fetchCompanies();
+            resetForm();
+            setEditingCompanyId(null);
+            setShowModal(false);
+            setToastMessage("Company Updated Successfully");
+            setShowToast(true);
+        }
+    };
+
+    const deleteCompany = async (id: string) => {
+        const res = await fetch(`/api/companies?id=${id}`, {
+            method: "DELETE"
+        });
+        const data = await res.json();
+        if (data.success) {
+            fetchCompanies();
+        setToastMessage("Company Deleted Successfully");
+        setShowToast(true);
+        }
+    };
 
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
-    const [editingCompanyId, setEditingCompanyId] = useState<number | null>(null); 
+    const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
     const [showToast, setShowToast] = useState(false); // New state for toast
+    const [toastMessage, setToastMessage] = useState("");
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [companyToDelete, setCompanyToDelete] = useState<Company | null> (null);
+    const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
 
     // form states
     const [companyName, setCompanyName] = useState("");
@@ -67,11 +122,6 @@ export default function CompaniesPage() {
         []
     );
 
-    // useEffect hook to save companies to localStorage whenever the companies state changes    
-    useEffect (() => {
-        localStorage.setItem("companies", JSON.stringify(companies));
-    }, [companies]);
-
     // New useEffect to handle toast visibility:
     useEffect(() => {
         if (showToast) {
@@ -83,7 +133,7 @@ export default function CompaniesPage() {
     }, [showToast]);
 
     const resetForm = () => {
-         setCompanyName("");
+        setCompanyName("");
         setRegistrationNumber("");
         setIndustryType("");
         setVatNumber("");
@@ -99,102 +149,68 @@ export default function CompaniesPage() {
         setCurrency("");
     };
 
-    const handleAddCompany = () => {
-        if (!companyName.trim())
-            return;
+     const handleEditClick = (company: Company) => {
+    setEditingCompanyId(company._id || null);
+    setCompanyName(company.companyName);
+    setRegistrationNumber(company.registrationNumber);
+    setIndustryType(company.industryType);
+    setVatNumber(company.vatNumber);
+    setStreetAddress(company.streetAddress);
+    setCity(company.city);
+    setPostalCode(company.postalCode);
+    setCountry(company.country);
+    setAccountHolderName(company.accountHolderName);
+    setAccountNumber(company.accountNumber);
+    setSortCode(company.sortCode);
+    setIban(company.iban);
+    setBic(company.bic);
+    setCurrency(company.currency);
+    setShowModal(true);
+  };
 
-        const newCompany: Company = {
-            id: companies.length > 0 ? Math.max(...companies.map(c => c.id)) + 1 : 1,
-            companyName,
-            registrationNumber,
-            industryType,
-            vatNumber,
-            streetAddress,
-            city,
-            postalCode,
-            country,
-            accountHolderName,
-            accountNumber,
-            sortCode,
-            iban,
-            bic,
-            currency,
-        };
-        setCompanies([...companies, newCompany]);
-        resetForm();
-        setShowModal(false);
+  const handleSave = () => {
+    const companyData: Company = {
+      companyName,
+      registrationNumber,
+      industryType,
+      vatNumber,
+      streetAddress,
+      city,
+      postalCode,
+      country,
+      accountHolderName,
+      accountNumber,
+      sortCode,
+      iban,
+      bic,
+      currency,
     };
 
-    // This is new functionality for editing
-    const handleEditClick = (company: Company) => {
-        setEditingCompanyId(company.id);
-        // pre-populate the form with company's data
-        setCompanyName(company.companyName);
-        setRegistrationNumber(company.registrationNumber);
-        setIndustryType(company.industryType);
-        setVatNumber(company.vatNumber);
-        setStreetAddress(company.streetAddress);
-        setCity(company.city);
-        setPostalCode(company.postalCode);
-        setCountry(company.country);
-        setAccountHolderName(company.accountHolderName);
-        setAccountNumber(company.accountNumber);
-        setSortCode(company.sortCode);
-        setIban(company.iban);
-        setBic(company.bic);
-        setCurrency(company.currency);
-
-        setShowModal(true);
-    };
-
-    // saving edited company's details
-    const handleSaveChanges = () => {
-        if (!companyName.trim() || editingCompanyId === null)
-            return;
-
-        setCompanies(companies.map(company => 
-            company.id === editingCompanyId ? {
-                ...company,
-                companyName,
-                registrationNumber,
-                industryType,
-                vatNumber,
-                streetAddress,
-                city,
-                postalCode,
-                country,
-                accountHolderName,
-                accountNumber,
-                sortCode,
-                iban,
-                bic,
-                currency,
-            }
-            : company
-        ));
-
-        resetForm();
-        setEditingCompanyId(null);
-        setShowModal(false);
-        setShowToast(true); // show toast notification
-    };
+    if (editingCompanyId) {
+        updateCompany(editingCompanyId, companyData);
+    }
+    else {
+        addCompany(companyData);
+    }
+  };
 
     const handleDeleteClick = (company: Company) => {
-        setCompanyToDelete(company);
-        setShowDeleteModal(true);
+      setShowDeleteModal(true);  // show Modal
+      setCompanyToDelete(company);  // set which company to delete
     };
+
+
+  const handleConfirmDelete = () => {
+    if (companyToDelete?._id) {
+      deleteCompany(companyToDelete._id);
+      setShowDeleteModal(false);
+      setCompanyToDelete(null);
+    }
+  };
 
     const filteredCompanies = companies.filter((c) =>
         c.companyName.toLowerCase().includes(search.toLowerCase())
     );
-
-    const handleConfirmDelete = () => {
-        if (companyToDelete) {
-            setCompanies(companies.filter((c) => c.id !== companyToDelete.id));
-            setShowDeleteModal(false);
-            setCompanyToDelete(null);
-        }
-    };
 
     return (
         <div className="p-6 space-y-6">
@@ -205,10 +221,10 @@ export default function CompaniesPage() {
 
                 <button
                     onClick={() => {
-                        resetForm(); 
-                        setEditingCompanyId(null); 
-                        setShowModal(true); 
-                    }}   
+                        resetForm();
+                        setEditingCompanyId(null);
+                        setShowModal(true);
+                    }}
                     className="flex items-center gap-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
                 >
                     <Plus className="h-4 w-4" />
@@ -228,7 +244,7 @@ export default function CompaniesPage() {
             <ul>
                 {filteredCompanies.map((c) => (
                     <li
-                        key={c.id}
+                        key={c._id}
                         className="flex justify-between items-center p-2 border-b"
                     >
                         <span>
@@ -236,16 +252,16 @@ export default function CompaniesPage() {
                         </span>
 
                         <div className="flex gap-2">
-                            <button 
-                            onClick={() => handleEditClick(c)}
-                            className="p-1 text-blue-600 hover:text-blue-800"
+                            <button
+                                onClick={() => handleEditClick(c)}
+                                className="p-1 text-blue-600 hover:text-blue-800"
                             >
                                 <Edit className="h-4 w-4" />
                             </button>
 
-                            <button 
-                            onClick={() => handleDeleteClick(c)} 
-                            className="p-1 text-red-600 hover:text-red-800"
+                            <button
+                                onClick={() => handleDeleteClick(c)}
+                                className="p-1 text-red-600 hover:text-red-800"
                             >
                                 <Trash className="h-4 w-4" />
                             </button>
@@ -276,7 +292,7 @@ export default function CompaniesPage() {
 
                         {/* Title changes based on mode*/}
                         <h3 className="text-xl font-semibold mb-4">
-                            {editingCompanyId !== null ? "Edit Company" : "Add New Company"}
+                            {editingCompanyId ? "Edit Company" : "Add New Company"}
                         </h3>
 
                         {/* Section: Basic Information */}
@@ -633,10 +649,10 @@ export default function CompaniesPage() {
                             </button>
 
                             <button
-                                onClick={editingCompanyId !== null ? handleSaveChanges : handleAddCompany}
+                                onClick={handleSave}
                                 className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
                             >
-                                {editingCompanyId !== null ? "Update Company" : "Create Company"}
+                                {editingCompanyId ? "Update Company" : "Create Company"}
                             </button>
                         </div>
                     </div>
@@ -652,14 +668,14 @@ export default function CompaniesPage() {
                                 Success
                             </h4>
                             <p className="text-sm text-gray-600">
-                                    Company updated successfully
+                                {toastMessage}
                             </p>
                         </div>
                         <button
-                        onClick={() => setShowToast(false)}
-                        className="text-gray-400 hover:text-gray-600"
+                            onClick={() => setShowToast(false)}
+                            className="text-gray-400 hover:text-gray-600"
                         >
-                            <X className="h-5 w-5"/>
+                            <X className="h-5 w-5" />
                         </button>
                     </div>
                 </div>
@@ -678,14 +694,14 @@ export default function CompaniesPage() {
                                 setShowDeleteModal(false);
                                 setCompanyToDelete(null);
                             }}
-                            className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                                className="px-4 py-2 rounded-lg border hover:bg-gray-100"
                             >
                                 Cancel
                             </button>
 
                             <button
-                            onClick={handleConfirmDelete}
-                            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+                                onClick={handleConfirmDelete}
+                                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
                             >
                                 Delete
                             </button>
