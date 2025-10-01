@@ -18,6 +18,8 @@ export default function TemplatesPage() {
     const [search, setSearch] = useState("");
     const [templates, setTemplates] = useState<Template[]>([]);
     const [showForm, setShowForm] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
 
     // Fetch Templates from API
     useEffect(() => {
@@ -50,6 +52,21 @@ export default function TemplatesPage() {
         else {
       alert("Failed to delete");
     }
+    };
+
+    // confirm button inside modal
+    const handleConfirmDelete = async() => {
+        if (templateToDelete?._id){
+            await handleDelete(templateToDelete._id);
+            setTemplateToDelete(null);
+            setShowDeleteModal(false);
+        }
+    };
+
+    // cancel button inside modal
+    const handleCancelDelete = () => {
+        setTemplateToDelete(null);
+        setShowDeleteModal(false);
     };
 
     //upload/Edit File
@@ -165,11 +182,46 @@ export default function TemplatesPage() {
 
                         {/* Delete */}
                         <button
-                        onClick={() => handleDelete(template._id!)}
+                        onClick={() => {
+                            setTemplateToDelete(template);
+                            setShowDeleteModal(true);
+                        }}
                         className="text-red-600 hover: text-red-800"
                         >
                             <Trash className="h-5 w-5" />
                         </button>
+
+                        {/* Delete Confirmation Model */}
+                        {showDeleteModal && (
+                            <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                                <div className="bg-white rounded-lg p-6 w-96">
+                                    <h2 className="text-lg font-bold mb-4">
+                                        Delete Template
+                                    </h2>
+
+                                    <p className="mb-6">
+                                        Are you sure you want to delete <br />                                        <span className="font-semibold">
+                                            { templateToDelete?.name }
+                                        </span>
+                                    </p>
+
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                        onClick={handleCancelDelete}
+                                        className="px-4 py-2 rounded-lg border hover:bg-gray-100"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                        onClick={handleConfirmDelete}
+                                        className="px-4 py-2 rounded-lg border hover:bg-red-700"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             ))}
