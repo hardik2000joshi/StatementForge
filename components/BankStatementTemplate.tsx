@@ -1,6 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
+// Define data structures for dynamic fetching
+interface AccountInfo {
+    bankName: string;
+    branch: string;
+    contact: string;
+    accountHolder: string;
+    accountNumber: string;
+    statementPeriod: string;
+    closingBalance: string;
+    totalDebits: string;
+}
+
 interface Transaction {
+    id: string;
     date: string;
     description: string;
     debit: string;
@@ -8,84 +23,110 @@ interface Transaction {
     balance: string;
 }
 
-export default function BankStatementTemplatePage({templateName}: {templateName: string}) {
-    // sample data
-    const transactions: Transaction[] = [
-        {
-            date: "2025-09-01",
-            description: "Opening Balance",
-            debit: "-",
-            credit: "-",
-            balance: "50, 000.00"
-        },
+interface statementData {
+    accountInfo: AccountInfo;
+    transactions: Transaction[];
+}
 
-        {
-            date: "2025-09-02",
-            description: "Direct Deposit - Salary",
-            debit: "-",
-            credit:"15500.00",
-            balance: "65500.00"
-        },
+interface Props {
+    templateName: string;
+    selectedCompanyId: string;
+}
 
-        {
-            date: "2025-09-03",
-            description: "ATM Withdrawl - Main Street",
-            debit: "2,000.00",
-            credit: "-",
-            balance: "63,500.00"
-        },
+export default function BankStatementTemplatePage({templateName, selectedCompanyId}: Props) {
+    const [statementData, setStatementData] = useState<statementData | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    // state for user selection
+    const [selectedIds, setSelectedIds] = useState<string[]>([]); 
 
-        {
-            date: "2025-09-05",
-            description: "Online Purchase - Amazon",
-            debit: "3,800.00",
-            credit: "-",
-            balance: "59,700.00"
-        },
+    // Dynamic data fetching
+    useEffect(() => {
+        if (!selectedCompanyId)
+            return;
 
-        {
-            date: "2025-09-08",
-            description: "Credit Card Payment",
-            debit: "5,000.00",
-            credit: "-",
-            balance: "54,700.00"
-        },
+        const fetchStatement = async () => {
+            setIsLoading(true);
+            try {
+                const res = await fetch(`/api/bankStatements/currentPeriod?companyId=${selectedCompanyId}`);
+                if(!res.ok) {
+                    throw new Error("Failed to load statement");
+                }
+               const data:statementData = await res.json();
+               setStatementData(data);
+            }
+            catch(err) {
+                console.error("Error fetching statement:", err);
+                setStatementData(null);
+            }
+            finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStatement();
+    }, [selectedCompanyId]);
 
-        {
-            date: "2025-09-12",
-            description: "Interest Credit",
-            debit: "-",
-            credit: "15.50",
-            balance: "54,715.50" 
-        },
+    // Selection Handler
+    const handleSelect = (id: string, isChecked: boolean) => {
+        setSelectedIds(prev => 
+            isChecked ? [...prev, id] : prev.filter(tid => tid !== id)
+        );
+    };
 
-        {
-            date: "2025-09-15",
-            description: "Bill Payment - Electric Co.",
-            debit: "250.00",
-            credit: "-",
-            balance: "54,465.50"
-        },
+    // Invoice Generation Handler
+    const handleGenerateInvoice =   () => {
+        if (!statementData || selectedIds.length===0) 
+            return;
+        // Full transaction objects that were selected
+        const itemsToInvoice = statementData.transactions.filter(t => selectedIds.includes(t.id));
+        // send `itemsToInvoice` data to your backend API
+        console.log("Invoice items ready to be sent to backend:", itemsToInvoice);
+        // simulate success message
+        alert (`Invoice data prepared for ${itemsToInvoice.length} transacton(s)!`);
+    };
 
-        {
-            date: "2025-09-20",
-            description: "Deposit - Check",
-            debit: "-",
-            credit: "1,200.00",
-            balance: "55,665.50",
-        },
+    if (isLoading) {
+        return(
+        <div className="p-10 text-center text-lg">
+            Loading Bank Statement Data...
+        </div>
+        );
+    }
 
-        {
-            date: "2025-09-25",
-            description: "Bank Service Fee",
-            debit: "5.00",
-            credit: "-",
-            balance: "55,660.50"
-        },
-    ];
+    if(!statementData) {
+        return(
+        <div className="p-10 text-center text-red-600">
+            Failed to load statement data. Please ensure the 'Bank Statement' collection exists in your 'database'.
+        </div>
+        );
+    }
+
+        const {accountInfo, transactions} = statementData;
+        const selectedCount = selectedIds.length;
 
     return (
         <div className="bg-white shadow-md rounded-lg p-6 max-w-3xl mx-auto">
+            {/* Add Generate Invoice Button */}
+            <div className="flex justify-between items-center bg-gray-100 p-3 rounded-lg border mb-6">
+                <div className="font-medium text-gray-700">
+                    <span className="text-blue-600 font-bold">
+                        {selectedCount}
+                    </span>
+                    transaction
+                    {selectedCount !== 1 ? 's' : ''}
+                    selected
+                </div>
+
+                <button 
+                onClick={handleGenerateInvoice}
+                disabled={selectedCount === 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition $ {
+                    selectedCount>0 ? 'bg-blue-600 hover:bg-blue-700' : "bg-gray-400 cursor-not-allowed"}`}
+                >
+                    Generate Invoice
+                </button>
+            </div>
+
             <h1 className="text-2xl font-bold text-center mb-4">
                 {templateName} - Statement of Account
             </h1>
@@ -99,21 +140,21 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                         <strong>
                             Bank Name:
                         </strong>
-                        Global Trust Bank
+                        {accountInfo.bankName}
                     </p>
 
                     <p>
                         <strong>
                             Branch:
                         </strong>
-                        Downtown Branch
+                        {accountInfo.branch}
                     </p>
 
                     <p>
                         <strong>
                             Contact:
                         </strong>
-                        1-800-555-1234
+                        {accountInfo.contact}
                     </p>
                 </div>
 
@@ -127,21 +168,21 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                 <strong>
                     Account Holder:
                 </strong>
-                John Doe:
+                {accountInfo.accountHolder}
             </p>
 
             <p>
                 <strong>
                     Account Number:
                 </strong>
-                1234567890
+                {accountInfo.accountNumber}
             </p>
 
             <p>
                 <strong>
                     Statement Period:
                     </strong> 
-                    Sept 2025
+                    {accountInfo.statementPeriod}
                     </p>
                 </div>
             </div>
@@ -153,6 +194,10 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                     <table className="w-full border-collapse mt-6 text-sm">
                         <thead>
                             <tr className="bg-gray-100">
+                                <th className="border px-4 py-2 w-10">
+                                    Select
+                                </th>
+
                                 <th className="border px-4 py-2">
                                     Date
                                 </th>
@@ -162,11 +207,11 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                                 </th>
 
                                 <th className="border px-4 py-2">
-                                    Debit (Withdrawl)
+                                    Debit(Withdrawl)
                                 </th>
 
                                 <th className="border px-4 py-2">
-                                    Credit (Deposit)
+                                    Credit(Deposit)
                                 </th>
 
                                 <th className="border px-4 py-2">
@@ -177,9 +222,19 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
 
                         <tbody>
                             {
-                                transactions.map((txn, idx) => {
-                                    return(
-                                    <tr key={idx} className="hover:bg-gray-50">
+                                (transactions as Transaction[]).map((txn: Transaction) => (
+                                    <tr key={txn.id} className="hover:bg-gray-50">
+                                        <td className="border px-4 py-2 text-center">
+                                            {/* Checkbox for selection */}
+                                            <input 
+                                            type="checkbox"
+                                            checked={selectedIds.includes(txn.id)} 
+                                            onChange={(e) => handleSelect(txn.id, e.target.checked)}
+                                            // Disable selection for non-transactional Opening balance
+                                            disabled = {txn.description === "OpeningBalance"}
+                                            />  
+                                        </td>
+
                                         <td className="border px-4 py-2">
                                             {txn.date}
                                         </td>
@@ -200,8 +255,7 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                                             {txn.balance}
                                         </td>
                                     </tr>
-                                    );
-                                })}
+                                ))}
                         </tbody>
                     </table>
 
@@ -211,11 +265,11 @@ export default function BankStatementTemplatePage({templateName}: {templateName:
                         </h4>
 
                         <p>
-                            Closing Balance: $55,660.50
+                            Closing Balance: ${accountInfo.closingBalance}
                         </p>
 
                         <p>
-                            Total Debits:$11,055.00
+                            Total Debits:${accountInfo.totalDebits}
                         </p>
                     </div>
 

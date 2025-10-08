@@ -8,7 +8,7 @@ interface GenerationRules {
     outgoingMax: number;
     incomingMin: number;
     incomingMax: number;
-    categories: string;
+    categories: string[];
     style: "basic" | "detailed" | "minimal";
 }
 
@@ -17,8 +17,13 @@ function generateTransactions(rules: GenerationRules){
     const transactions:any[] = [];
 
     for(let i=0; i<rules.txnsPerWeek; i++) {
-        const amount = Math.floor(
-            Math.random() * (rules.maxAmount - rules.minAmount + 1) + rules.minAmount
+        // Decide is tranaction incoming or outgoing:
+        const isCredit = i % 2 === 0; 
+        
+        const amount = isCredit ? Math.floor(
+            Math.random() * (rules.incomingMax - rules.incomingMin + 1) + rules.incomingMin
+        ) : Math.floor(
+            Math.random() * (rules.outgoingMax - rules.outgoingMin + 1) + rules.outgoingMin
         );
 
         const category = rules.categories[Math.floor(Math.random() * rules.categories.length)];

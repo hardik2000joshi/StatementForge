@@ -88,6 +88,7 @@ export default function TemplatesPage() {
     );
 
     const [viewingTemplate, setViewingTemplate] = useState<Template | null> (null);
+    const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
     return (
     <div className="p-6">
@@ -104,7 +105,10 @@ export default function TemplatesPage() {
         {/* Conditional Rendering based on category */}
         {
             viewingTemplate.category === "Bank Statement" ? (
-                <BankStatementTemplatePage templateName={viewingTemplate.name.toString()} />
+                <BankStatementTemplatePage 
+                templateName={viewingTemplate.name.toString()} 
+                selectedCompanyId={selectedCompanyId}
+                />
             ) : viewingTemplate.category === "Invoice" ? (
                 <InvoiceTemplatePage templateName={viewingTemplate.name.toString()} />
             ) : (
