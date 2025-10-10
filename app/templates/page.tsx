@@ -72,12 +72,23 @@ export default function TemplatesPage() {
     //upload/Edit File
     const handleFileChange = (id: string, file:File, type:"htmlFile" | "cssFile") => {
         const reader = new FileReader();
-        reader.onload = () => {
+        reader.onload = async () => {
+            const fileContent = reader.result as string;
+
+            // update frontend state
             setTemplates(
             templates.map((t) => 
-                t._id === id ? {...t, [type]: reader.result as string} : t
-            )
+                (t._id === id ? {...t, [type]: fileContent} : t))
         );
+
+        // update backend db
+        await fetch(`/api/templates/${id}`, {
+            method: "PATCH", // Add patch API to update template
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({[type]: fileContent}),
+        });
     };
     reader.readAsText(file);
         };
@@ -216,6 +227,7 @@ export default function TemplatesPage() {
                                         >
                                             Cancel
                                         </button>
+
                                         <button
                                         onClick={handleConfirmDelete}
                                         className="px-4 py-2 rounded-lg border hover:bg-red-700"

@@ -28,43 +28,62 @@ interface statementData {
     transactions: Transaction[];
 }
 
-interface Props {
-    templateName: string;
-    selectedCompanyId: string;
+interface Template {
+    _id?: string;
+    name: string;
+    category: string;
+    htmlFile?: string;
+    cssFile?: string;
 }
 
-export default function BankStatementTemplatePage({templateName, selectedCompanyId}: Props) {
+    interface Props {
+        templateName: string;
+        selectedCompanyId: string;
+    }
+
+    export default function BankStatementTemplatePage({templateName, selectedCompanyId}: Props) {
     const [statementData, setStatementData] = useState<statementData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [template, setTemplate] = useState<Template | null>(null); // new state
     
     // state for user selection
     const [selectedIds, setSelectedIds] = useState<string[]>([]); 
 
     // Dynamic data fetching
     useEffect(() => {
-        if (!selectedCompanyId)
+        if (!selectedCompanyId || !templateName)
             return;
 
-        const fetchStatement = async () => {
+        const fetchData = async () => {
             setIsLoading(true);
             try {
-                const res = await fetch(`/api/bankStatements/currentPeriod?companyId=${selectedCompanyId}`);
-                if(!res.ok) {
+                const statementRes = await fetch(`/api/bankStatements/currentPeriod?companyId=${selectedCompanyId}`);
+                if(!statementRes.ok) {
                     throw new Error("Failed to load statement");
                 }
-               const data:statementData = await res.json();
-               setStatementData(data);
+               const statementData:statementData = await statementRes.json();
+               setStatementData(statementData);
+
+               // fetch template by name
+               const templateRes = await fetch(`api/templates?name=${encodeURIComponent(templateName)}`);
+               const templateJson = await templateRes.json();
+               if(templateJson.success && templateJson.data.length>0) {
+                setTemplate(templateJson.data[0]);
+               } else {
+                setTemplate(null);
+               }
             }
             catch(err) {
                 console.error("Error fetching statement:", err);
                 setStatementData(null);
+                setTemplate(null);
             }
             finally {
                 setIsLoading(false);
             }
         };
-        fetchStatement();
-    }, [selectedCompanyId]);
+        fetchData();
+    }, [selectedCompanyId, templateName]);
 
     // Selection Handler
     const handleSelect = (id: string, isChecked: boolean) => {
@@ -93,7 +112,7 @@ export default function BankStatementTemplatePage({templateName, selectedCompany
         );
     }
 
-    if(!statementData) {
+     if(!statementData) {
         return(
         <div className="p-10 text-center text-red-600">
             Failed to load statement data. Please ensure the 'Bank Statement' collection exists in your 'database'.
@@ -101,6 +120,13 @@ export default function BankStatementTemplatePage({templateName, selectedCompany
         );
     }
 
+    if (!template || !template.htmlFile){
+        alert("Template HTML Not Found");
+        return;
+    }
+    let htmlContent = template.htmlFile;
+    htmlContent = htmlContent.replace(/{{companyName}}/g, statementData.accountInfo.accountHolder);
+    
         const {accountInfo, transactions} = statementData;
         const selectedCount = selectedIds.length;
 
@@ -222,7 +248,7 @@ export default function BankStatementTemplatePage({templateName, selectedCompany
 
                         <tbody>
                             {
-                                (transactions as Transaction[]).map((txn: Transaction) => (
+                                (transactions).map((txn: Transaction) => (
                                     <tr key={txn.id} className="hover:bg-gray-50">
                                         <td className="border px-4 py-2 text-center">
                                             {/* Checkbox for selection */}

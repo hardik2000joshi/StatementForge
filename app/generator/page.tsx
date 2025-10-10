@@ -1,7 +1,7 @@
     "use client";
 
     import Button from "@/components/ui/Button";
-    import { Download, DownloadIcon, Eye, Save, Trash2, X } from "lucide-react";
+    import { Download, DownloadIcon, Eye, Save, TicketX, Trash2, X } from "lucide-react";
     import { useEffect, useState } from "react";
     import { toast } from "sonner";
 
@@ -104,60 +104,73 @@
     const [transactions, setTransactions] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+    const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
 
+    // Fetch companies and templates
     useEffect(() => {
-        const fetchCompanies = async () => {
-            const response = await fetch("/api/companies");
-            const data = await response.json();
-            console.log(data);
-            if (Array.isArray(data.data)){
-            setCompanies(data.data);
-            if(data.data.length>0) 
-                setSelectedCompanyId(data.data[0]._id);
+        async function fetchData() {
+            const companyRes = await fetch("/api/companies");
+            const companyData = await companyRes.json();
+            console.log(companyData);
+            if (Array.isArray(companyData.data)){
+            setCompanies(companyData.data);
+            if(companyData.data.length>0) 
+                setSelectedCompanyId(companyData.data[0]._id);
         } else {
             setCompanies([]);
         }
-        };
-        fetchCompanies();
 
-        const fetchTemplates = async () => {
-            const res = await fetch("/api/templates");
-            const data = await res.json();
-            if(Array.isArray(data)) {
-            setTemplates(data);
-            if(data.length>0) 
-                setSelectedTemplateId(data[0]._id);
+        // Fetch Templates
+            const templateRes = await fetch("/api/templates");
+            const templateData = await templateRes.json();
+            if(Array.isArray(templateData.data)) {
+            setTemplates(templateData.data);
+            if(templateData.data.length>0) 
+                setSelectedTemplateId(templateData.data[0]._id);
         } 
         else {
             setTemplates([]);
         }
-        };
-        fetchTemplates();
+        }
+        fetchData();
     }, []);
+
+    // Handle Checkbox toggle
+    const handleTransactionSelect = (txnId : string) => {
+        setSelectedTransactions((prev) => 
+            prev.includes(txnId) ? prev.filter((id) => id !== txnId) : [...prev, txnId]
+        );
+    };
 
     // Generate Statement
     const handleGenerateStatement = async () => {
-        
+        if(!selectedCompanyId || !selectedTemplateId) {
+            toast.error("select company and template");
+            return;
+        }
+
         setLoading(true);
         try {
-            const res = await fetch("/api/generator", {
+            const txnRes = await fetch("/api/generator", {
                 method: "POST",
                 headers: {
                     "Content-Type" : "application/json"
                 },
                 body: JSON.stringify({
-                    rules
+                    company: companies.find(c => c._id === selectedCompanyId) ?.companyName || "Unknown Company",               
+                    rules,         
                 }),
             });
 
-            const data = await res.json();
-            if (!data.success) 
+            const txndata = await txnRes.json();
+            if (!txndata.success) 
                 throw new Error("Failed to generate transactions"); 
-                const txns = data.statement?.transactions || [];
+                const txns = txndata.statement?.transactions || [];
 
                 if (!Array.isArray(txns) || txns.length === 0) {
                     throw new Error("No transactions returned from API");
                 }
+                setTransactions(txns);
 
                 const sorted = [...txns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -186,35 +199,56 @@
 
       // Render statement using template
       const templateId = selectedTemplateId;  // selected from UI
-      const statementRes = await fetch(`/api/bankStatements/${templateId}`, {
+      const templateRes = await fetch(`/api/bankStatements/${templateId}`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({transactions: txns}),
+        body: JSON.stringify({
+            companyId: selectedCompanyId,
+            transactions: txns,
+        }),
       });
 
-      const statementData = await statementRes.json();
-      if(!statementRes.ok)
-        throw new Error(statementData.message || "Failed to generate statement");
+      const templateData = await templateRes.json();
+      if(!templateRes.ok)
+        throw new Error(templateData.message || "Failed to generate statement");
 
-      setStatementHTML(statementData.html);
-      setStatementCSS(statementData.css);
-      setTransactions(txns);
+      setStatementHTML(templateData.html);
+      setStatementCSS(templateData.css);
       
             // Add to recent generations list
             setRecentGenerations((prev) => [
                 {
-                    id: data.id,
-                    transactions: data.statement.transactions.length,
-                    date: new Date(data.statement.createdAt).toLocaleString(),
+                    id: txndata.id,
+                    transactions: txndata.statement.transactions.length,
+                    date: new Date(txndata.statement.createdAt).toLocaleString(),
                 },
                 ...prev,
             ]);
 
-            toast.success("Statement Generated!", {
-                description: `${data.statement.transactions.length} transactions created.`,
-            });
+            toast.success(`Statement Generated! ${txns.length} transactions created.`);
+
+            const selectedCompany = companies.find(c => c._id === selectedCompanyId);
+            const selectedTemplate = templates.find(t => t._id === selectedTemplateId);
+
+            if (!selectedCompany) {
+                alert("please select a company");
+                return;
+            }
+
+            if (selectedTemplate) {
+                // Replace macros/placeholders in html
+                let html = selectedTemplate.htmlFile || "";
+                html = html.replace(/<company_name>/g, selectedCompany.companyName);
+                html = html.replace(/<account_number>/g, selectedCompany.accountNumber || "");
+                html = html.replace(/<closing_balance>/g, summary?.closingBalance?.toString() || "0");
+                
+                const css = selectedTemplate.cssFile || "";
+
+                setStatementHTML(html);
+                setStatementCSS(css);
+            }
         }
 
         catch(err: any) {
@@ -409,31 +443,6 @@
                                 </div>
                             )}
 
-                            {/* Preview Section */}
-                            {
-                                statementHTML && (
-                                    <div className="mt-6 border p-4 rounded-lg bg-white shadow-md">
-                                        <style>
-                                            {statementCSS}
-                                        </style>
-                                        <div dangerouslySetInnerHTML={{__html: statementHTML}} />
-                                        <div className="mt-4">
-                                            <h3 className="font-semibold mb-2">
-                                                Select transactions to generate invoices:
-                                            </h3>
-                                            {transactions.map((tx, idx)=> (
-                                                <label key={idx} className="block">
-                                                    <input 
-                                                    type="checkbox" 
-                                                    className="mr-2"
-                                                    />
-                                                    {tx.description} - {tx.amount}
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )
-                            }   
                             
                             {/* Footer Button */}
                             <div className="mt-6 flex justify-end gap-3">
@@ -672,30 +681,88 @@
                         </div>
                     </div>
 
+                    <div className="p-6 space-y-6">
+                        {/* Company & Template Selection */}
+                        <div className="rounded-2xl border p-6 shadow-sm bg-gray-50">
+                            <h2 className="text-lg font-semibold">
+                                Select Company & Template
+                            </h2>
+
+                            <div className="mt-4 space-y-4">
+                                <div>
+                                    <label className="block mb-1 font-medium">
+                                        Company
+                                    </label>
+                                    <select 
+                                    value={selectedCompanyId}
+                                    onChange={(e) => setSelectedCompanyId(e.target.value)}
+                                    className="w-full border rounded-lg px-3 py-2"
+                                    >
+                                        {companies.map((c) => (
+                                            <option key={c._id} value={c._id}>
+                                                {c.companyName}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
                     <label className="block mb-2 font-medium">
-                        Select Template
+                        Template
                     </label>
                     <select 
-                    className="w-full border rounded-lg px-3 py-2 mb-4"
+                    className="w-full border rounded-lg px-3 py-2"
                     value={selectedTemplateId}
                     onChange={(e) => setSelectedTemplateId(e.target.value)}
                     >
                         {templates.map((t) => (
                             <option key={t._id} value={t._id}>
-                                {t.name} ({t.category})
+                                {t.name}
                             </option>
                         ))}
                     </select>
-
+                    </div>
 
                     {/* Generate Button */}
-                    <button  
+                    <Button  
                     onClick={handleGenerateStatement}
                     disabled={loading}                  
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg shadow-md flex items-center justify-center gap-2">
                         {loading ? "Generating..." : "Generate Statement"}
-                    </button>
-                    <br />
+                    </Button>
+                            </div>
+                        </div>
+
+                        {/* Preview Section */}
+                            {
+                                statementHTML && (
+                                    <div className="mt-6 border p-4 rounded-lg bg-white shadow-md">
+                                        <style>
+                                            {statementCSS}
+                                        </style>
+                                        <div dangerouslySetInnerHTML={{__html: statementHTML}} />
+
+                                        {/* Transaction Selection */}
+                                        <div className="mt-4">
+                                            <h3 className="font-semibold mb-2">
+                                                Select transactions to generate invoices:
+                                            </h3>
+                                            {transactions.map((tx)=> (
+                                                <label key={tx._id} className="block">
+                                                    <input 
+                                                    type="checkbox" 
+                                                    className="mr-2"
+                                                    checked={selectedTransactions.includes(tx._id)}
+                                                    onChange={() => handleTransactionSelect(tx._id)}
+                                                    />
+                                                    {tx.description} - {tx.amount}
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                    </div>
+            
 
                     {/* Generation Summary */}
                     <div className="rounded-2xl border p-6 shadow-sm">

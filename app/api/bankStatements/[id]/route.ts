@@ -37,7 +37,7 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
             );
         }
         // Fetch Transactions for this company
-        const transactions = await db.collection("Bank Statement").find({
+        const transactions = await db.collection("bankStatements").find({
             companyId: company._id.toString()
         }).toArray();
 
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
                 balance += t.amount;
             else {
                 balance -= t.amount;
+                totalDebits += t.amount;
             }
         });
 
@@ -59,17 +60,26 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
         ? `${new Date(sortedTransactions[0].date).toLocaleDateString()} - ${new Date(sortedTransactions[sortedTransactions.length-1].date).toLocaleDateString()}`
         : "No Transactions";
 
+        let txnsHTML = sortedTransactions.map(t => `
+  <tr>
+    <td>${t.date}</td>
+    <td>${t.description}</td>
+    <td>${t.type}</td>
+    <td>${t.amount}</td>
+  </tr>
+`).join("");
+
         // Replace dynamic variables in HTML Template
         let htmlContent = template.htmlFile;
         htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName);
-        htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber);
+        htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
         htmlContent = htmlContent.replace(/{{accountHolderName}}/g, company.accountHolderName);
         htmlContent = htmlContent.replace(/{{bankName}}/g, company.bankName || "");
         htmlContent = htmlContent.replace(/{{statementPeriod}}/g, statementPeriod);
         htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
         htmlContent = htmlContent.replace(/{{balance}}/g, balance.toString());
         htmlContent = htmlContent.replace(/{{totalDebits}}/g, totalDebits.toString());
-        htmlContent = htmlContent.replace(/{{}}/g, JSON.stringify(sortedTransactions));
+        htmlContent = htmlContent.replace(/{{transactions}}/g, txnsHTML);
 
         // Return HTML & CSS
         return NextResponse.json({

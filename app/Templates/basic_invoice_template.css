@@ -1,53 +1,73 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter' Arial, sans-serif;
     padding: 20px;
     background-color: #fff;
     color: #333;
+    max-width: 900px;
+    margin: auto;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-.header {
+.statement-header {
     border-bottom: 2px solid #007bff;
     padding-bottom: 10px;
     margin-bottom: 20px;
+    text-align: left;
 }
 
-.company-name{
-    font-size: 12px;
-    color: #666;
+.statement-header h1 {
+    margin: 0;
+    font-size: 24px;
+    color: #007bff;
 }
 
-.invoice-title {
-    text-align: center;
-    font-size: 30px;
-    margin: 20px 0;
-}
-
-.invoice-info {
+.statement-summary {
     display: flex;
     justify-content: space-between;
+    flex-wrap: wrap;
+    background-color: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
     margin-bottom: 20px;
 }
 
-.invoice-info h3 {
-    margin-bottom: 5px;
-    color: #007bff
+.section-title {
+    border-bottom: 1px solid #ddd;
+    font-size: 18px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
 }
 
-invoice-table {
+.transactions-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 20px;
+    margin-top: 10px;
 }
 
-.invoice-table td {
-    border: 1px solid black;
-    padding: 8px;
-    text-align: center;
+.transactions-table th {
+    background-color: #f1f1f1;
+    font-size: 14px;
+    padding: 10px;
+    text-align: left;
 }
 
-.invoice-table th {
-    background-color: #f8f9fa;
-    font-weight: bold;
+.transactions-table td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.transactions-table td.Income {
+    color: green;
+}
+
+.transactions-table td.expense {
+    color: red;
+}
+
+.transactions-table tr:hover {
+    background-color: #f9f9f9;
 }
 
 .totals {

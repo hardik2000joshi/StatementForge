@@ -3,145 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice</title>
+    <title>Bank Statement</title>
     <link rel="stylesheet" href="basic_invoice_template.css">
 </head>
 <body>
-    <header class="header">
-        <h1 class="company-name">
-            Acme Services Ltd
+    <div class="statement-header">
+        <h1>
+            {{bankName}}
         </h1>
-        <p class="company-details">
-             123 Main Street, London, UK <br>
-      Phone: +44 1234 567890 | Email: info@acme.com
+        <p>
+        <strong>
+        Account Number:
+        </strong>
+        {{accountNumber}}
         </p>
-    </header>
-
-    <h2 class="invoice-title">
-        INVOICE
-    </h2>
-
-    <section class="invoice-info">
-        <div>
-            <h3>
-                Billed To:
-            </h3>
-            <p>
-                John Doe <br>
-                456 Client Street <br>
-                Manchester, UK
-            </p> 
+        <div class="statement-summary">
+            <div>
+                <strong>
+                    Period:
+                </strong>
+                {{periodStart}} - {{periodEnd}}
+            </div>
+            <div>
+                <strong>
+                    Transactions:
+                </strong>
+                {{totalTransactions}}
+            </div>
+            <div>
+                <strong>
+                    Opening Balance
+                </strong>
+                {{openingBalance}}
+            </div>
+            <div>
+                <strong>
+                    Closing Balance
+                </strong>
+                {{closingBalance}}
+            </div>
         </div>
 
-        <div>
-            <h3>Invoice Details</h3>
-            <p>
-                Invoice No: INV-2025-001 <br>
-                Date: 24 Sept 2025 <br>
-                Due: 30 Sept 2025
-            </p>
-        </div>
-    </section>
+        <h2 class="section-title">
+            Transactions
+        </h2>
 
-    <table class="invoice-table">
+        <table class="transaction-table">
         <thead>
         <tr>
+            <th>
+                Date
+            </th>
             <th>
                 Description
             </th>
 
             <th>
-                Qty
+                Amount
             </th>
 
             <th>
-                Rate
+                Balances
             </th>
 
             <th>
-                Total
+                Type
             </th>
         </tr>
         </thead>
 
         <tbody>
+            {{#each transactions}}
             <tr>
                 <td>
-                    Website Design
+                   {{date}}
                 </td>
 
                 <td>
-                    1
+                    {{description}}
+                </td>
+
+                <td class="{{type}}">
+                   {{amount}}
                 </td>
 
                 <td>
-                    500.00
+                    {{balance}}
                 </td>
 
                 <td>
-                    500.00
+                    {{type}}
                 </td>
             </tr>
-
-            <tr>
-                <td>
-                    Hosting (1 year)
-                </td>
-                <td>
-                    1
-                </td>
-                <td>
-                    120.00
-                </td>
-                <td>
-                    120.00
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    Domain Name
-                </td>
-                <td>
-                    1
-                </td>
-                <td>
-                    15.00
-                </td>
-                <td>
-                    15.00
-                </td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="Totals">
-        <p>
-            <strong>
-            Subtotal:
-            </strong>
-            635.00
-        </p>
-        <p>
-            <strong>
-                Tax (20%):
-            </strong>
-            127.00
-        </p>
-        <p class="grand-total">
-            <strong>
-                Total Due:
-            </strong>
-            762.00
-        </p>
-    </div>
-
-    <footer class="footer">
-        <p>
-            Payment due within 7 days. Late payments may be subject to fees
-        </p>
-        <p>
-            Thank you for your business!
-        </p>
-    </footer>
+            {{/each}}
+            </tbody>
+            </table>
 </body>
 </html>

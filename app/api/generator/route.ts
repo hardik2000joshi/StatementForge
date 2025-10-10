@@ -1,7 +1,6 @@
-import clientPromise from "@/lib/db";
+ import clientPromise from "@/lib/db";
 import {ObjectId} from "mongodb";
 import { NextResponse } from "next/server";
-
 interface GenerationRules {
     txnsPerWeek: number;
     outgoingMin: number;
@@ -11,24 +10,19 @@ interface GenerationRules {
     categories: string[];
     style: "basic" | "detailed" | "minimal";
 }
-
 // Generate random transactions
 function generateTransactions(rules: GenerationRules){
     const transactions:any[] = [];
-
     for(let i=0; i<rules.txnsPerWeek; i++) {
         // Decide is tranaction incoming or outgoing:
-        const isCredit = i % 2 === 0; 
-        
+        const isCredit = i % 2 === 0;
         const amount = isCredit ? Math.floor(
             Math.random() * (rules.incomingMax - rules.incomingMin + 1) + rules.incomingMin
         ) : Math.floor(
             Math.random() * (rules.outgoingMax - rules.outgoingMin + 1) + rules.outgoingMin
         );
-
         const category = rules.categories[Math.floor(Math.random() * rules.categories.length)];
-
-        // Define function randomDateInLastWeek 
+        // Define function randomDateInLastWeek
         function randomDateInLastWeek() {
             const now = new Date();
             const past = new Date();
@@ -37,8 +31,7 @@ function generateTransactions(rules: GenerationRules){
                 past.getTime() + Math.random() + (now.getTime() - past.getTime())
             );
         }
-
-        // Format based on style 
+        // Format based on style
         if (rules.style === 'basic') {
             transactions.push({
                 _id: new ObjectId(),
@@ -57,8 +50,8 @@ function generateTransactions(rules: GenerationRules){
                 amount,
                 type: i % 2 === 0 ? "credit" :"debit",
                 balanceAfter:
-                5000 + 
-                (i % 2 === 0 ? amount: -amount) 
+                5000 +
+                (i % 2 === 0 ? amount: -amount)
             });
         }
         else if(rules.style === "minimal") {
@@ -71,7 +64,6 @@ function generateTransactions(rules: GenerationRules){
     }
     return transactions;
 }
-
 // API POST Request
 export async function POST(req: Request) {
     try {
@@ -79,7 +71,6 @@ export async function POST(req: Request) {
         const rules : GenerationRules = body.rules;
         const company = body.company ?? "Unknown Company";
         const statementType = rules.style;
-
         if (!rules) {
             return NextResponse.json(
                 {
@@ -90,10 +81,10 @@ export async function POST(req: Request) {
                     status: 400
                 });
         }
-        
+        console.log("Request Body:", body);
         const transactions = generateTransactions(rules);
-        const statement = { 
-            company, 
+        const statement = {
+            company,
             statementType,
             rules,
             transactions: transactions.map((t) => ({
@@ -103,12 +94,10 @@ export async function POST(req: Request) {
             })),
             createdAt: new Date(),
         };
-
         // Save in db
         const client = await clientPromise;
         const db = client.db("myAccountDB");
         const result = await db.collection("generator").insertOne(statement);
-
         // return response
         return NextResponse.json({
             success: true,
@@ -116,7 +105,6 @@ export async function POST(req: Request) {
             statement,
         });
     }
-
     catch (error:any) {
         console.error("Error Saving Statement:", error);
         return NextResponse.json(
@@ -128,5 +116,14 @@ export async function POST(req: Request) {
                 status: 500
             }
         );
-    } 
+    }
 }
+
+
+
+
+
+
+
+
+
