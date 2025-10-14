@@ -1,5 +1,6 @@
 "use client";
 
+import { HtmlContext } from "next/dist/shared/lib/html-context.shared-runtime";
 import { useEffect, useState } from "react";
 
 // Define data structures for dynamic fetching
@@ -93,15 +94,36 @@ interface Template {
     };
 
     // Invoice Generation Handler
-    const handleGenerateInvoice =   () => {
-        if (!statementData || selectedIds.length===0) 
+    const handleGenerateInvoice = async () => {
+        if (!statementData || selectedIds.length === 0) 
             return;
         // Full transaction objects that were selected
         const itemsToInvoice = statementData.transactions.filter(t => selectedIds.includes(t.id));
+
+        try {
+            const res = await fetch('/api/invoices/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    transactions: itemsToInvoice,
+                    companyId: selectedCompanyId, templateName
+                })
+            }); 
+            if(!res.ok)
+                throw new Error("Failed to generate invoice");
+
+            const data = await res.json();
+            alert(`Invoice generated successfully for ${itemsToInvoice.length} transaction(s)!`);
+            console.log("Invoice Data:", data); 
+        }
+        catch (err) {
+            console.error(err);
+            alert("Error generating invoice.");
+        }
         // send `itemsToInvoice` data to your backend API
         console.log("Invoice items ready to be sent to backend:", itemsToInvoice);
-        // simulate success message
-        alert (`Invoice data prepared for ${itemsToInvoice.length} transacton(s)!`);
     };
 
     if (isLoading) {
@@ -120,15 +142,51 @@ interface Template {
         );
     }
 
+
     if (!template || !template.htmlFile){
         alert("Template HTML Not Found");
         return;
     }
-    let htmlContent = template.htmlFile;
-    htmlContent = htmlContent.replace(/{{companyName}}/g, statementData.accountInfo.accountHolder);
-    
-        const {accountInfo, transactions} = statementData;
+
+    const {accountInfo, transactions} = statementData;
         const selectedCount = selectedIds.length;
+    if (template.htmlFile) {
+        let htmlContent = template.htmlFile;
+    htmlContent = htmlContent.replace(/{{companyName}}/g, statementData.accountInfo.accountHolder);
+    htmlContent = htmlContent.replace(/{{bankName}}/g, statementData.accountInfo.bankName);
+    htmlContent = htmlContent.replace(/{{accountNumber}}/g, statementData.accountInfo.accountNumber);
+    htmlContent = htmlContent.replace(/{{statementPeriod}}/g, statementData.accountInfo.statementPeriod);
+    htmlContent = htmlContent.replace(/{{openingBalance}}/g, statementData.accountInfo.totalDebits);
+    htmlContent = htmlContent.replace(/{{closingBalance}}/g, statementData.accountInfo.closingBalance);
+
+    // Replace transactions placeholder
+    const txnHTML = transactions.map(txn => `
+        <tr>
+            <td>
+                ${txn.date}
+            </td>
+            <td>
+                ${txn.description}
+            </td>
+            <td className="${txn.debit ? 'Expense' : txn.credit ? 'Income' : ''}">
+                ${txn.debit || txn.credit}
+            </td>
+            <td>
+                ${txn.balance}
+            </td>
+            <td>
+                ${txn.credit ? "Income" : "Expense"}
+            </td>
+        </tr>
+    `).join('');
+
+    htmlContent = htmlContent.replace(/{{transactions}}/g, txnHTML);
+
+    // Inject CSS dynamically
+    if (template.cssFile) {
+        htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
+    }
+    }
 
     return (
         <div className="bg-white shadow-md rounded-lg p-6 max-w-3xl mx-auto">
@@ -269,11 +327,11 @@ interface Template {
                                             {txn.description}
                                         </td>
 
-                                        <td className="border px-4 py-2">
+                                        <td className={`border px-4 py-2 ${txn.debit ? 'Expense' : ''}`}>
                                             {txn.debit}
                                         </td>
 
-                                        <td className="border px-4 py-2">
+                                        <td className={`border px-4 py-2 ${txn.credit ? 'Income' : ''}`}>
                                             {txn.credit}
                                         </td>
 
