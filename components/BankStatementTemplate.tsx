@@ -1,6 +1,5 @@
 "use client";
 
-import { HtmlContext } from "next/dist/shared/lib/html-context.shared-runtime";
 import { useEffect, useState } from "react";
 
 // Define data structures for dynamic fetching
@@ -10,18 +9,22 @@ interface AccountInfo {
     contact: string;
     accountHolder: string;
     accountNumber: string;
+    periodStart: string;
+    periodEnd: string;
     statementPeriod: string;
     closingBalance: string;
-    totalDebits: string;
+    openingBalance: string;
 }
 
 interface Transaction {
     id: string;
     date: string;
     description: string;
-    debit: string;
+    type: string,
+    amount: string,
+    balance: string,
+    debit: string,
     credit: string;
-    balance: string;
 }
 
 interface statementData {
@@ -155,12 +158,31 @@ interface Template {
     htmlContent = htmlContent.replace(/{{companyName}}/g, statementData.accountInfo.accountHolder);
     htmlContent = htmlContent.replace(/{{bankName}}/g, statementData.accountInfo.bankName);
     htmlContent = htmlContent.replace(/{{accountNumber}}/g, statementData.accountInfo.accountNumber);
-    htmlContent = htmlContent.replace(/{{statementPeriod}}/g, statementData.accountInfo.statementPeriod);
-    htmlContent = htmlContent.replace(/{{openingBalance}}/g, statementData.accountInfo.totalDebits);
+
+    const periodStart = statementData.transactions.length 
+    ? statementData.transactions[0].date 
+    : '';
+    htmlContent = htmlContent.replace(/{{periodStart}}/g, statementData.accountInfo.periodStart);
+
+    const periodEnd = statementData.transactions.length 
+    ? statementData.transactions[statementData.transactions.length - 1].date 
+    : '';
+    htmlContent = htmlContent.replace(/{{periodEnd}}/g, statementData.accountInfo.periodEnd);
+
+    htmlContent = htmlContent.replace(/{{totalTransactions}}/g, statementData.transactions.length.toString());
+    htmlContent = htmlContent.replace(/{{openingBalance}}/g, statementData.accountInfo.openingBalance);
     htmlContent = htmlContent.replace(/{{closingBalance}}/g, statementData.accountInfo.closingBalance);
 
+    // Inject CSS inline from database
+if (template.cssFile) {
+    htmlContent = htmlContent.replace(
+        '</head>',
+        `<style>${template.cssFile}</style></head>`
+    );
+}
+
     // Replace transactions placeholder
-    const txnHTML = transactions.map(txn => `
+    const txnHTML = statementData.transactions.map(txn => `
         <tr>
             <td>
                 ${txn.date}
@@ -168,14 +190,14 @@ interface Template {
             <td>
                 ${txn.description}
             </td>
-            <td className="${txn.debit ? 'Expense' : txn.credit ? 'Income' : ''}">
-                ${txn.debit || txn.credit}
+            <td class="${txn.type === 'debit' ? 'debit' : 'credit'}">
+                ${txn.amount}
             </td>
             <td>
                 ${txn.balance}
             </td>
             <td>
-                ${txn.credit ? "Income" : "Expense"}
+                ${txn.type}
             </td>
         </tr>
     `).join('');
@@ -353,7 +375,7 @@ interface Template {
                         </p>
 
                         <p>
-                            Total Debits:${accountInfo.totalDebits}
+                            Total Debits:${accountInfo.openingBalance}
                         </p>
                     </div>
 

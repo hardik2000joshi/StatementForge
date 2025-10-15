@@ -2,9 +2,10 @@ import clientPromise from "@/lib/db";
 import {ObjectId} from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
+export async function GET(req: NextRequest, {params}: {params:{id:string}}) {
+    const templateId = params.id;
+
     try {
-        const templateId = params.id;
         const client = await clientPromise;
         const db = client.db("myAccountDB");
 
@@ -36,9 +37,10 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
                 {status: 404}
             );
         }
+
         // Fetch Transactions for this company
         const transactions = await db.collection("bankStatements").find({
-            companyId: company._id.toString()
+            companyId: company._id.toString()   
         }).toArray();
 
         // compute statement period, opening/closing balance
@@ -60,6 +62,14 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
         ? `${new Date(sortedTransactions[0].date).toLocaleDateString()} - ${new Date(sortedTransactions[sortedTransactions.length-1].date).toLocaleDateString()}`
         : "No Transactions";
 
+        if (!template.htmlFile) {
+            return NextResponse.json({
+                message: "Template HTML missing"
+            }, {
+                status: 500
+            });
+        }
+
         let txnsHTML = sortedTransactions.map(t => `
   <tr>
     <td>${t.date}</td>
@@ -71,15 +81,19 @@ export async function GET(req: NextRequest, {params}: {params: {id:string}}) {
 
         // Replace dynamic variables in HTML Template
         let htmlContent = template.htmlFile;
-        htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName);
+        htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName || "");
         htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
-        htmlContent = htmlContent.replace(/{{accountHolderName}}/g, company.accountHolderName);
+        htmlContent = htmlContent.replace(/{{accountHolderName}}/g, company.accountHolderName || "");
         htmlContent = htmlContent.replace(/{{bankName}}/g, company.bankName || "");
         htmlContent = htmlContent.replace(/{{statementPeriod}}/g, statementPeriod);
         htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
         htmlContent = htmlContent.replace(/{{balance}}/g, balance.toString());
         htmlContent = htmlContent.replace(/{{totalDebits}}/g, totalDebits.toString());
         htmlContent = htmlContent.replace(/{{transactions}}/g, txnsHTML);
+        
+        // Inject CSS
+        if (template.cssFile)
+            htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
 
         // Return HTML & CSS
         return NextResponse.json({

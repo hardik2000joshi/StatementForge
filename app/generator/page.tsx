@@ -199,16 +199,8 @@
 
       // Render statement using template
       const templateId = selectedTemplateId;  // selected from UI
-      const templateRes = await fetch(`/api/bankStatements/${templateId}`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            companyId: selectedCompanyId,
-            transactions: txns,
-        }),
-      });
+      const templateRes = await fetch(`/api/bankStatements/${templateId}?companyId=${selectedCompanyId}`
+      );
 
       const templateData = await templateRes.json();
       if(!templateRes.ok)

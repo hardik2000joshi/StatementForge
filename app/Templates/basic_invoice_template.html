@@ -4,10 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bank Statement</title>
-    <link rel="stylesheet" href="basic_invoice_template.css">
 </head>
 <body>
     <div class="statement-header">
+        <h1>
+            {{companyName}}
+        </h1>
         <h1>
             {{bankName}}
         </h1>
@@ -73,29 +75,7 @@
         </thead>
 
         <tbody>
-            {{#each transactions}}
-            <tr>
-                <td>
-                   {{date}}
-                </td>
-
-                <td>
-                    {{description}}
-                </td>
-
-                <td class="{{type}}">
-                   {{amount}}
-                </td>
-
-                <td>
-                    {{balance}}
-                </td>
-
-                <td>
-                    {{type}}
-                </td>
-            </tr>
-            {{/each}}
+            {{transactions}}
             </tbody>
             </table>
 </body>
