@@ -69,7 +69,12 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const rules : GenerationRules = body.rules;
-        const company = body.company ?? "Unknown Company";
+        const company = body.company || {
+            companyName: "Webnatics Ltd",
+            bankName: "Secure Bank Ltd",
+            accountNumber: "12345678"
+              };
+              
         const statementType = rules.style;
         if (!rules) {
             return NextResponse.json(
@@ -83,9 +88,33 @@ export async function POST(req: Request) {
         }
         console.log("Request Body:", body);
         const transactions = generateTransactions(rules);
+
+        const openingBalance = 5000;
+        const totalTransactions = transactions.length;
+
+        // compute closing balance
+        const closingBalance = transactions.reduce((balance, txn) => {
+            if (txn.type === 'credit')
+                return balance + txn.amount;
+            if (txn.type === 'debit')
+                return balance - txn.amount;
+            return balance;
+        }, openingBalance);
+
+        // calculate periodStart and periodEnd dynamically from transactions
+        const dates = transactions.map(t => new Date(t.date));
+        const periodStart = new Date(Math.min(...dates.map(d => d.getTime()))).toISOString().split("T")[0];
+        const periodEnd = new Date(Math.max(...dates.map(d => d.getTime()))).toISOString().split("T")[0];
+
         const statement = {
             company,
             statementType,
+            accountNumber: "12345678",
+            periodStart,
+            periodEnd,
+            openingBalance,
+            closingBalance,
+            totalTransactions,
             rules,
             transactions: transactions.map((t) => ({
                 ...t,

@@ -1,31 +1,48 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bank Statement</title>
+    <!-- Add Top Header Section with logo placeholder -->
+    <title>{{bankName}} - Bank Statement</title>
 </head>
 <body>
-    <div class="statement-header">
-        <h1>
-            {{companyName}}
-        </h1>
-        <h1>
-            {{bankName}}
+    <div class="bank-statement">
+        <!-- Header Section -->
+        <div class="statement-header">
+            <div class="header-left">
+                <h1 class="bank-name">
+                    {{bankName}}
         </h1>
         <p>
-        <strong>
-        Account Number:
-        </strong>
-        {{accountNumber}}
+            <strong>
+            Account Holder:
+            </strong>
+                {{companyName}}
         </p>
-        <div class="statement-summary">
-            <div>
-                <strong>
-                    Period:
-                </strong>
-                {{periodStart}} - {{periodEnd}}
+        <p>
+            <strong>
+            Account Number: 
+            </strong>
+                {{accountNumber}}
+        </p>
             </div>
+
+            <div class="header-right">
+                <p>
+                    <strong>
+                        Statement Period:
+                    </strong>
+                </p>
+                <p>
+                    {{periodStart}} - {{periodEnd}}
+                </p>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+         <div class="statement-summary">
             <div>
                 <strong>
                     Transactions:
@@ -34,20 +51,21 @@
             </div>
             <div>
                 <strong>
-                    Opening Balance
+                    Opening Balance:
                 </strong>
-                {{openingBalance}}
+                £{{openingBalance}}
             </div>
             <div>
                 <strong>
                     Closing Balance
                 </strong>
-                {{closingBalance}}
+                £{{closingBalance}}
             </div>
         </div>
 
+        <!-- Transaction Table -->
         <h2 class="section-title">
-            Transactions
+            Transaction Details
         </h2>
 
         <table class="transactions-table">
@@ -59,17 +77,14 @@
             <th>
                 Description
             </th>
-
             <th>
-                Amount
+                Debit (Expense)
             </th>
-
             <th>
-                Balances
+                Credit (Income)
             </th>
-
             <th>
-                Type
+                Balance
             </th>
         </tr>
         </thead>
@@ -78,5 +93,6 @@
             {{transactions}}
             </tbody>
             </table>
+            </div>
 </body>
 </html>

@@ -1,118 +1,174 @@
 import clientPromise from "@/lib/db";
-import {ObjectId} from "mongodb";
+import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, {params}: {params:{id:string}}) {
-    const templateId = params.id;
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const generatorId = params.id;
+  const client = await clientPromise;
+  const db = client.db("myAccountDB");
+  try {
 
-    try {
-        const client = await clientPromise;
-        const db = client.db("myAccountDB");
+    // Get companyId from query
+    const url = new URL(req.url);
+    console.log("Incoming request to Bank Statements API");
+    console.log("URL:", req.url);
+    console.log("Params Id:", params.id);
+    console.log("Company ID query:", url.searchParams.get("companyId"));
 
-        // Get Template
-        const template = await db.collection("templates").findOne({_id: new ObjectId(templateId)});
-        if (!template) {
-            return NextResponse.json({
-                message: "Template not found"
-            }, {
-                status: 404
-            });
-        }
-
-        // Get Company Id for Query Params
-        const url = new URL(req.url);
-        const companyId = url.searchParams.get("companyId");
-        if (!companyId) {
-            return NextResponse.json(
-                {message: "Missing companyId parameter"},
-                {status: 400}
-            );
-        }
-
-        // Fetch Company Info dynamically
-        const company = await db.collection("companies").findOne({_id: new ObjectId(companyId)});
-        if (!company){
-            return NextResponse.json(
-                {message: "Company not found"},
-                {status: 404}
-            );
-        }
-
-        // Fetch Transactions for this company
-        const transactions = await db.collection("bankStatements").find({
-            companyId: company._id.toString()   
-        }).toArray();
-
-        // compute statement period, opening/closing balance
-        let openingBalance = Number(company.openingBalance ?? 0);
-        let balance = openingBalance;
-        let totalDebits = 0;
-
-        const sortedTransactions = transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        sortedTransactions.forEach(t => {
-            if(t.type === "credit")
-                balance += t.amount;
-            else {
-                balance -= t.amount;
-                totalDebits += t.amount;
-            }
-        });
-
-        const statementPeriod = sortedTransactions.length
-        ? `${new Date(sortedTransactions[0].date).toLocaleDateString()} - ${new Date(sortedTransactions[sortedTransactions.length-1].date).toLocaleDateString()}`
-        : "No Transactions";
-
-        if (!template.htmlFile) {
-            return NextResponse.json({
-                message: "Template HTML missing"
-            }, {
-                status: 500
-            });
-        }
-
-        let txnsHTML = sortedTransactions.map(t => `
-  <tr>
-    <td>${t.date}</td>
-    <td>${t.description}</td>
-    <td>${t.type}</td>
-    <td>${t.amount}</td>
-  </tr>
-`).join("");
-
-        // Replace dynamic variables in HTML Template
-        let htmlContent = template.htmlFile;
-        htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName || "");
-        htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
-        htmlContent = htmlContent.replace(/{{accountHolderName}}/g, company.accountHolderName || "");
-        htmlContent = htmlContent.replace(/{{bankName}}/g, company.bankName || "");
-        htmlContent = htmlContent.replace(/{{statementPeriod}}/g, statementPeriod);
-        htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
-        htmlContent = htmlContent.replace(/{{balance}}/g, balance.toString());
-        htmlContent = htmlContent.replace(/{{totalDebits}}/g, totalDebits.toString());
-        htmlContent = htmlContent.replace(/{{transactions}}/g, txnsHTML);
-        
-        // Inject CSS
-        if (template.cssFile)
-            htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
-
-        // Return HTML & CSS
-        return NextResponse.json({
-            html: htmlContent,
-            css: template.cssFile || "",
-            transactions: sortedTransactions,
-            company,
-            statementPeriod,
-            openingBalance,
-            closingBalance: balance,
-            totalDebits
-        }, {status: 200});
-        }
-    catch(err) {
-        console.error("Error generating statement", err);
-        return NextResponse.json({
-            message: "Internal Server Error"
-        }, {
-            status: 500
-        });
+    const companyId = url.searchParams.get("companyId");
+    if (!companyId) {
+      return NextResponse.json({ message: "Missing companyId parameter" }, { status: 400 });
     }
+
+    // Fetch template
+    const template = await db.collection("templates").findOne({category: "Bank Statement"});
+    if (!template) {
+      return NextResponse.json({ message: "Template not found" }, { status: 404 });
+    }
+
+    // Fetch company
+    const company = await db.collection("companies").findOne({ _id: new ObjectId(companyId) });
+    if (!company) {
+      return NextResponse.json({ message: "Company not found" }, { status: 404 });
+    }
+
+    const generatorCollection = db.collection("generator");
+
+    let transactions: any[] = [];
+    let openingBalance = 0;
+    let balance = 0;
+    let periodStart = "";
+    let periodEnd = "";
+    let totalTransactions = 0;
+    if (generatorId === "all") {
+      console.log("Fetching all generator documents...");
+      // merge all generator docs
+    const generatorDocs = await generatorCollection.find({
+      company: company.companyName
+    }).toArray();
+
+    if(!generatorDocs.length) {
+      return NextResponse.json({
+        message: "No Statements found"
+      }, {
+        status: 404
+      });
+    }
+
+    // flatten all transactions
+    transactions = generatorDocs.flatMap((doc) => doc.transactions || []);
+
+    // use latest for opening balance
+    const latest = generatorDocs.sort((
+      a,b
+    ) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+    openingBalance = Number(latest.openingBalance ?? 0);
+    }
+    else {
+       // fetch single generator doc
+       console.log("🔹 Generator ID:", generatorId);
+       console.log("🔹 Company Name (from DB):", company.companyName);
+    const generatorDoc = await generatorCollection.findOne({
+      _id: new ObjectId(generatorId),
+      company: company.companyName, // match company name
+    });
+
+    if(!generatorDoc) {
+      return NextResponse.json({
+        message: "Generator not found"
+      }, {
+        status: 404
+      });
+    }
+    console.log("Generator ID:", generatorId);
+    
+    transactions = generatorDoc.transactions || [];
+    openingBalance = Number(generatorDoc.openingBalance ?? 0);
+    }
+
+    // common balance and period logic
+    let sortedTxns = transactions.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    balance = openingBalance;
+    totalTransactions = sortedTxns.length;
+    periodStart = totalTransactions
+      ? new Date(sortedTxns[0].date).toLocaleDateString()
+      : "";
+    periodEnd = totalTransactions
+      ? new Date(sortedTxns[totalTransactions - 1].date).toLocaleDateString()
+      : "";
+
+    // Calculate balance dynamically
+    sortedTxns.forEach((t) => {
+      if (t.type === "credit") balance += t.amount;
+      else balance -= t.amount;
+    });
+
+    // Build transaction rows dynamically
+    const txnHtml = sortedTxns
+      .map(
+        (t) => `
+          <tr class="selectable">
+            <td>
+            ${t.date}
+            </td>
+            <td>
+            ${t.description || "-"}
+            </td>
+            <td class="amount-debit">
+            ${t.type === "debit" ? "£" + t.amount : ""}
+            </td>
+            <td class="amount-credit">
+            ${t.type === "credit" ? "£" + t.amount : ""}
+            </td>
+            <td class="balance">
+            £${t.balance || ""}
+            </td>
+          </tr>
+        `
+      )
+      .join("");
+
+    // Replace placeholders in HTML
+    let htmlContent = template.htmlFile || "";
+    htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName || "");
+    htmlContent = htmlContent.replace(/{{bankName}}/g, company.bankName || "");
+    htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
+    htmlContent = htmlContent.replace(/{{periodStart}}/g, periodStart);
+    htmlContent = htmlContent.replace(/{{periodEnd}}/g, periodEnd);
+    htmlContent = htmlContent.replace(/{{totalTransactions}}/g, totalTransactions.toString());
+    htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
+    htmlContent = htmlContent.replace(/{{closingBalance}}/g, balance.toString());
+    htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
+
+    // Remove leftover Handlebars placeholders
+    htmlContent = htmlContent.replace(/{{[#\/](each|if)[^}]*}}/g, "");
+    // Inject CSS if exists
+    if (template.cssFile) {
+      htmlContent = htmlContent.replace("</head>", `<style>${template.cssFile}</style></head>`);
+    }
+
+    return NextResponse.json(
+      {
+        html: htmlContent,
+        css: template.cssFile || "",
+        company,
+        transactions: sortedTxns,
+        openingBalance,
+        closingBalance: balance,
+        periodStart,
+        periodEnd,
+        totalTransactions,
+      },
+      { status: 200 }
+    );
+  } catch (err: any) {
+    console.error("Error generating bank statement:", err);
+    return NextResponse.json(
+      { message: "Internal Server Error", error: err.message },
+      { status: 500 }
+    );
+  }
 }

@@ -2,6 +2,38 @@ import clientPromise from "@/lib/db";
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 
+// Get Templates using GET function
+export async function GET(req: Request, {params}: {params: {id: string}}) {
+  try {
+    const {id} = params;
+    const client = await clientPromise;
+    const db = client.db("myAccountDB");
+    const template = await db.collection("templates").findOne({_id: new ObjectId(id)});
+
+    if (!template) {
+      return NextResponse.json({
+        success: false,
+        message: "Template not found"
+      }, {
+        status: 404
+      });
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: template
+    });
+  }
+  catch(error) {
+    return NextResponse.json({
+      success: false,
+      error: "Failed to fetch template"
+    }, {
+      status: 500
+    });
+  }
+}
+
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }

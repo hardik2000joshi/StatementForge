@@ -61,14 +61,7 @@ interface Template {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const statementRes = await fetch(`/api/bankStatements/currentPeriod?companyId=${selectedCompanyId}`);
-                if(!statementRes.ok) {
-                    throw new Error("Failed to load statement");
-                }
-               const statementData:statementData = await statementRes.json();
-               setStatementData(statementData);
-
-               // fetch template by name
+                             // fetch template (for styling)
                const templateRes = await fetch(`api/templates?name=${encodeURIComponent(templateName)}`);
                const templateJson = await templateRes.json();
                if(templateJson.success && templateJson.data.length>0) {
@@ -76,6 +69,13 @@ interface Template {
                } else {
                 setTemplate(null);
                }
+
+                const statementRes = await fetch(`/api/bankStatements/all?companyId=${selectedCompanyId}`);
+                if(!statementRes.ok) {
+                    throw new Error("Failed to load statement");
+                }
+               const statementData:statementData = await statementRes.json();
+               setStatementData(statementData);
             }
             catch(err) {
                 console.error("Error fetching statement:", err);
@@ -119,7 +119,7 @@ interface Template {
 
             const data = await res.json();
             alert(`Invoice generated successfully for ${itemsToInvoice.length} transaction(s)!`);
-            console.log("Invoice Data:", data); 
+            console.log("Invoice Data:", data);
         }
         catch (err) {
             console.error(err);
@@ -190,15 +190,15 @@ if (template.cssFile) {
             <td>
                 ${txn.description}
             </td>
-            <td class="${txn.type === 'debit' ? 'debit' : 'credit'}">
-                ${txn.amount}
+            <td class="debit">
+                ${txn.debit ? txn.debit : '-'}
+            </td>
+            <td class="credit">
+            ${txn.credit ? txn.credit : '-'}
             </td>
             <td>
                 ${txn.balance}
-            </td>
-            <td>
-                ${txn.type}
-            </td>
+            </td>   
         </tr>
     `).join('');
 

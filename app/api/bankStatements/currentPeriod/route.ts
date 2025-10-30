@@ -1,6 +1,7 @@
     import clientPromise from "@/lib/db";
     import { NextRequest, NextResponse } from "next/server";
     import { ObjectId } from "mongodb";
+import { error } from "console";
 
     export async function GET(req: NextRequest) {
         try {
@@ -106,8 +107,26 @@
                 });
             }
 
+    const sortedTxns = transactions.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    const totalTransactions = sortedTxns.length;
+    const periodStart = totalTransactions
+      ? new Date(sortedTxns[0].date).toLocaleDateString()
+      : "-";
+    const periodEnd = totalTransactions
+      ? new Date(sortedTxns[totalTransactions - 1].date).toLocaleDateString()
+      : "-";
+
+      sortedTxns.forEach((t) => {
+        if (t.type === "credit")
+            balance += t.amount;
+        else balance -= t.amount;
+            });
+
             // prepare transactions HTML for {{transactions}}
-            const txnHtml = sorted.map(t => `
+            const txnHtml = sortedTxns.map((t) => `
                 <tr>
                 <td>
                  ${t.date}
@@ -115,24 +134,28 @@
                  <td>
                  ${t.description}
                  </td>
-                 <td>
-                 ${t.type}
+                 <td class="amount-debit">
+                 ${t.type === "debit" ? "£" + t.amount : ""}
                  </td>
-                 <td>
-                 ${t.amount}
+                 <td class="amount-credit">
+                 ${t.type === "credit" ? "£" + t.amount : ""}
                  </td>
+                 <td class="balance">
+                 £${t.balance}
+                 </td>
+                 </tr>
                 `).join("");
 
                 // Replace placeholders inside HTML Template
                 let htmlContent = template.htmlFile;
                 htmlContent = htmlContent.replace(/{{companyName}}/g, company.companyName || "");
-                htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
-                htmlContent = htmlContent.replace(/{{accountHolderName}}/g, company.accountHolderName || "");
                 htmlContent = htmlContent.replace(/{{bankName}}/g, company.bankName || "");
-                htmlContent = htmlContent.replace(/{{statementPeriod}}/g, accountInfo.statementPeriod);
-                htmlContent =htmlContent.replace(/{{openingBalance}}/g, company.openingBalance);
-                htmlContent = htmlContent.replace(/{{closingBalance}}/g, accountInfo.closingBalance);
-                htmlContent = htmlContent.replace(/{{totalDebits}}/g, accountInfo.totalDebits);
+                htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
+                htmlContent = htmlContent.replace(/{{periodStart}}/g, periodStart);
+                htmlContent = htmlContent.replace(/{{periodEnd}}/g, periodEnd);
+                htmlContent = htmlContent.replace(/{{totalTransactions}/g, totalTransactions.toString());
+                htmlContent =htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
+                htmlContent = htmlContent.replace(/{{closingBalance}}/g, balance.toString());
                 htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
 
                  if (template.cssFile) htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
@@ -141,18 +164,23 @@
             return NextResponse.json({
                 html: htmlContent,
                 css: template.cssFile || "",
-                company,
-                accountInfo, 
-                transactions: sorted
+                company, 
+                transactions: sortedTxns,
+                openingBalance,
+                closingBalance: balance,
+                periodStart,
+                periodEnd,
+                totalTransactions,
             },{
                 status: 200
             });       
         }
         
-        catch(error) {
-            console.error("API error fetching statement:", error);
+        catch(err: any) {
+            console.error("Error generating current period statement", err);
             return NextResponse.json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                error: err.message
             },
             {
                 status: 500

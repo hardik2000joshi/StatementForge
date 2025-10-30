@@ -192,9 +192,10 @@
         openingBalance,
         closingBalance,
         netChange,
-        period: `${new Date(sorted[0].date).toLocaleDateString()} - ${new Date(
+        period: sorted.length ?
+        `${new Date(sorted[0].date).toLocaleDateString()} - ${new Date(
           sorted[sorted.length - 1].date
-        ).toLocaleDateString()}`,
+        ).toLocaleDateString()}`: "-"
       });
 
       // Render statement using template
@@ -208,6 +209,15 @@
 
       setStatementHTML(templateData.html);
       setStatementCSS(templateData.css);
+      setTransactions(templateData.transactions);
+
+      setSummary({
+        count: templateData.totalTransactions,
+        openingBalance: templateData.openingBalance,
+        closingBalance: templateData.closingBalance,
+        netChange: templateData.closingBalance - templateData.openingBalance,
+        period: `${templateData.periodStart} - ${templateData.periodEnd}`,
+      });
       
             // Add to recent generations list
             setRecentGenerations((prev) => [
@@ -227,19 +237,6 @@
             if (!selectedCompany) {
                 alert("please select a company");
                 return;
-            }
-
-            if (selectedTemplate) {
-                // Replace macros/placeholders in html
-                let html = selectedTemplate.htmlFile || "";
-                html = html.replace(/<company_name>/g, selectedCompany.companyName);
-                html = html.replace(/<account_number>/g, selectedCompany.accountNumber || "");
-                html = html.replace(/<closing_balance>/g, summary?.closingBalance?.toString() || "0");
-                
-                const css = selectedTemplate.cssFile || "";
-
-                setStatementHTML(html);
-                setStatementCSS(css);
             }
         }
 
@@ -552,7 +549,8 @@
                             </label>
                             <input 
                             type="number" 
-                            placeholder="250"
+                            value={rules.openingBalance}
+                            onChange={(e) => setRules({...rules, openingBalance: Number(e.target.value)})}
                             className="mt-1 w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                             />
                         </div>
@@ -794,7 +792,7 @@
                                     </span>
 
                                     <span>
-                                        £{summary.openingBalance.toFixed(2)}
+                                        £{(summary.openingBalance ?? 0).toFixed(2)}
                                     </span>
                                 </div>
 
@@ -804,8 +802,8 @@
                                 </span>
 
                                 <span>
-                                    £{summary.closingBalance.toFixed(2)}
-                                </span>
+                                    £{(summary.closingBalance ?? 0).toFixed(2)}
+                                </span>     
                             </div>
 
                             <div className={`flex justify-between font-semibold ${
@@ -815,7 +813,7 @@
                                 <span>Net Change</span>
                                 <span>
                                     {summary.netChange >= 0 ? "+" : "-"}£
-                                    {Math.abs(summary.netChange).toFixed(2)}
+                                    {Math.abs(summary.netChange ?? 0).toFixed(2)}
                                     </span>
                             </div>
                             </div>
