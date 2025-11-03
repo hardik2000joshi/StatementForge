@@ -162,7 +162,17 @@
                 }),
             });
 
-            const txndata = await txnRes.json();
+            const json = await txnRes.json();
+            if(!json.success) {
+                throw new Error(json.error || "failed to generate statement");
+            }
+            
+            const {statement, id} = json.data;
+            toast.success(`Statement Generated! ${statement.transactions.length} transactions created.`);
+
+            // Redirect
+            window.location.href = `/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`;
+                   const txndata = await txnRes.json();
             if (!txndata.success) 
                 throw new Error("Failed to generate transactions"); 
                 const txns = txndata.statement?.transactions || [];

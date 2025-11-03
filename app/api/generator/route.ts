@@ -130,8 +130,10 @@ export async function POST(req: Request) {
         // return response
         return NextResponse.json({
             success: true,
-            id: result.insertedId.toString(),
-            statement,
+            data: {
+                id: result.insertedId.toString(),
+                statement,
+            },
         });
     }
     catch (error:any) {
@@ -139,7 +141,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
             {
                 success: false,
-                error: error.message
+                error: error.message || "Something went wrong",
             },
             {
                 status: 500

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface Template {
     _id? : string;
@@ -11,7 +11,11 @@ interface Template {
     cssFile?: string;
 }
 
-export default function statementPreviewPage({params}: {params: {id: string}}) {
+// in Next.js 15+ when we mark component as "use client", params is a promise.
+// And when params is promise, we must unwrap it using React.use().
+
+export default function statementPreviewPage({params}: {params: Promise<{id: string}>}) {
+    const resolvedParams = React.use(params);
     const [data, setData] = useState<any>(null);
     const [template, setTemplate] = useState<Template | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -24,13 +28,25 @@ export default function statementPreviewPage({params}: {params: {id: string}}) {
         const fetchData = async() => {
             setIsLoading(true);
             try {
-                // fetch generator statement
-                const response = await fetch(`/api/generator/${params.id}`);
-                const json = await response.json();
-                if (!json.success) {
-                    throw new Error("Statement not found");
+                const companyId = new URLSearchParams(window.location.search).get("companyId");
+                if(!companyId) {
+                    throw new Error("Missing Company Id");
                 }
-                    setData(json.data);
+
+                // fetch generator statement
+                const response = await fetch(`/api/bankStatements/${resolvedParams.id}?companyId=${companyId}`);
+                // json response
+                const json = await response.json();
+                // if response is not valid or fine: error occured- json error or failed to load statement
+                // ||(or) logical or operator
+                if(!response.ok){
+                    throw new Error(json.message || "Failed to load statement");
+                }
+
+                /*if (!json.success) {
+                    throw new Error("Statement not found");
+                }*/
+                    setData(json);
 
                     // fetch template
                     const tResponse = await fetch(`/api/templates?name=${encodeURIComponent(templateName)}`);
@@ -49,14 +65,14 @@ export default function statementPreviewPage({params}: {params: {id: string}}) {
             }
         };
         fetchData();
-    }, [params.id, templateName]);
+    }, [resolvedParams.id, templateName]);
 
     if(isLoading) {
         return <div className="p-10 text-center">
             Loading Statement Preview...
         </div>;
     }
-    if (!data || !template) {
+    if (!data?.html || !template) {
         return <div className="p-10 text-center text-red-600">
             Statement  or Template not found
         </div>;
@@ -81,7 +97,7 @@ export default function statementPreviewPage({params}: {params: {id: string}}) {
             <h1 className="text-2xl font-bold mb-4">
                 Statement Preview
             </h1>
-            <div dangerouslySetInnerHTML={{__html: htmlContent}}/>
+            <div dangerouslySetInnerHTML={{__html: data.html}}/>
         </div>
     );
-} 
+}
