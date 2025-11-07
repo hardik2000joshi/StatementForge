@@ -2,7 +2,7 @@ import clientPromise from "@/lib/db";
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
   const generatorId = params.id;
   const client = await clientPromise;
   const db = client.db("myAccountDB");
