@@ -1,102 +1,241 @@
 "use client";
 
-import { count } from "console";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import Label from "@/components/ui/label";
+import Input from "@/components/ui/input";
 import { ArrowDownRight, ArrowUpRight, Plus, Search, Tag } from "lucide-react";
 import { useState } from "react";
+import { Dialog, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
+import Button from "@/components/ui/Button";
+import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 
-export default function Categories() {
+export default function VendorsPage() {
+    const [vendors, setVendors] = useState<{
+        name: string;
+        category: string;
+        frequencyPerMonth: string;
+        outgoingMin: string;
+        outgoingMax: string;
+        incomingMin: string;
+        incomingMax: string;
+        weekendActivity: string;
+    }[]
+    >([]);
+
+    const [form, setForm] = useState({
+        name: "",
+        category: "",
+        frequencyPerMonth: "",
+        outgoingMin: "",
+        outgoingMax: "",
+        incomingMin: "",
+        incomingMax: "",
+        weekendActivity: "",
+    });
+
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const {name, value} = e.target;
+        setForm({...form, [name]: value});
+    };
+
+    const handleAddVendor = () => {
+        if (!form.name || !form.category) return alert("Please fill vendor name and category");
+        setVendors([...vendors, form]);
+        setForm({
+            name: "",
+            category: "",
+            frequencyPerMonth: "",
+            outgoingMin: "",
+            outgoingMax: "",
+            incomingMin: "",
+            incomingMax: "",
+            weekendActivity: "",
+        });
+    };
+
     const [selectedCategory, setSelectedCategory] = useState<string | null> (null);
     const [selectedVendorGroup, setSelectedVendorGroup] = useState<string | null> (null);
 
-    const data = [
-        {
-            type: "Income",
-            vendors: [{name: "Payment Processors", count: 1}],
-            total: 1,
-            color: "green",
-            icon: <ArrowUpRight className="w-4 h-4 text-green-600"/>
-        },
-        {
-            type: "Expense",
-            vendors: [
-                {name: "AWS", count: 0},
-                {name: "Cloud Services", count: 0},
-                {name: "Utility Bills", count: 1},
-            ],
-            total: 3,
-            color: "red",
-            icon: <ArrowDownRight className="w-4 h-4 text-red-600"/>,
-        },
-    ];
+    return (    
+        <div className="p-6 space-y-6">
+            <Card>
+               <CardHeader className="flex justify-between items-center">
+                <CardTitle className="text-lg font-semibold">
+                    Vendors
+                    </CardTitle>
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus size={16} />
+                                Add Vendor
+                            </Button>
+                            </DialogTrigger>
 
-    return (
-        <div className="space-y-6">
-        <div className="rounded-2xl border p-4 bg-gray-5">
-            <h2 className="text-base font-semibold mb-4">
-                Categories
-            </h2>
-            <div className="space-y-4">
-                {data.map((category, idx) => (
-                    <div key={idx} className= "rounded-xl overflow-hidden">
-                        {/* Category Header */}
-                        <div
-                        className={`flex items-center justify-between p-4 ${
-                            category.color === "green"
-                            ? "bg-green-50"
-                            : "bg-red-50"
-                        }`}
-                        >
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>
+                                        Add New Vendor
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <Label>Vendor Name</Label>
+                                            <Input
+                                            name="name"
+                                            placeholder="e.g. Amazon Web Services"
+                                            value={form.name}
+                                            onChange={handleInput}
+                                            />
+                                        </div>
 
-                            <div className="flex items-center gap-2">
-                                {category.icon}
+                                        <div>
+                                            <Label>Vendor Category</Label>
+                                            <Input 
+                                            name="category"
+                                            placeholder="e.g. Cloud Services"
+                                            value={form.category}
+                                            onChange={handleInput}
+                                             />
+                                        </div>
 
-                                <span className="font-medium">
-                                    {category.type}
-                            </span>
-                            </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <Label>
+                                                    Outgoing Min
+                                                </Label>
+                                                <Input
+                                                name="outgoingMin"
+                                                type="number"
+                                                placeholder="e.g.500"
+                                                value={form.outgoingMin}
+                                                onChange={handleInput}
+                                                />
+                                            </div>
 
-                            <span className="text-sm text-gray-500">
-                                {category.total} total vendors
-                            </span>
-                        </div>
+                                            <div>
+                                                <Label>
+                                                    Outgoing Max
+                                                </Label>
+                                                <Input 
+                                                name="outgoingMax"
+                                                type="number"
+                                                placeholder="e.g.50000"
+                                                value={form.outgoingMax}
+                                                onChange={handleInput}
+                                                />
+                                            </div>
+                                        </div>
 
-                        {/* Vendors List */}
-                        <div className="divide-y">
-                            {category.vendors.map((vendor, i) => (
-                                <div
-                                key={i}
-                                onClick={() => {
-                                    setSelectedCategory(category.type);
-                                    setSelectedVendorGroup(vendor.name);
-                                }}
-                                className={`flex items-center justify-between p-4 cursor-pointer $ {
-                                    selectedVendorGroup === vendor.name
-                                    ? "bg-blue-50"
-                                    : "bg-gray-50"
-                                    } hover: bg-blue-50`}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Tag className="w-4 h-4 text-gray-500"/>
-                                        <span>{vendor.name}</span>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <Label>
+                                                    Incoming Min
+                                                </Label>
+                                                <Input
+                                                name="incomingMin"
+                                                type="number"
+                                                placeholder="e.g. 100"
+                                                value={form.incomingMin}
+                                                onChange={handleInput}
+                                                 />
+                                            </div>
+                                            <div>
+                                                <Label>
+                                                    Incoming Max
+                                                </Label>
+                                                <Input
+                                                name="incomingMax"
+                                                type="number"
+                                                placeholder="e.g. 10000"
+                                                value={form.incomingMax} 
+                                                onChange={handleInput}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <Label>
+                                                Frequency (Per Month)
+                                            </Label>
+                                            <Input
+                                            name="frequencyPerMonth"
+                                            type="number"
+                                            placeholder="e.g. 1"
+                                            value={form.frequencyPerMonth}
+                                            onChange={handleInput}
+                                             />
+                                        </div>
+
+                                        <div>
+                                            <Label>
+                                                Weekend Activity(%)
+                                            </Label>
+                                            <Input 
+                                            name="weekendActivity"
+                                            type="number"
+                                            placeholder="e.g. 20"
+                                            value={form.weekendActivity}
+                                            onChange={handleInput}
+                                            />
+                                        </div>
+
+                                        <Button onClick={handleAddVendor} className="w-full">
+                                            Save Vendor
+                                        </Button>
                                     </div>
+                            </DialogContent>
+                    </Dialog>
+               </CardHeader>
 
-                                    <span className="text-sm text-gray-500">
-                                        {vendor.count} vendors
-                                    </span>
-
-                                </div>
-                            ))}
+               <CardContent>
+                {
+                    vendors.length === 0 ?(
+                        <p className="text-sm text-ghray-500">
+                            No Vendors added yet
+                        </p>
+                    ) :(
+                        <div className="grid gap-3">
+                            {
+                                vendors.map((v, a) => (
+                                    <div
+                                    key={a}
+                                    className="border p-3 rounded-lg bg-gray-50 flex flex-col"
+                                    >
+                                        <div className="font-medium">
+                                            {v.name}
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                            Category: {v.category}
+                                        </div>
+                                        <div className="text-sm text-gray-700 space-y-1">
+                                            <div>
+                                                Frequency: {v.frequencyPerMonth} time(s) /month
+                                            </div>
+                                            <div>
+                                                outgoing: ₹{v.outgoingMin} - ₹{v.outgoingMax} 
+                                            </div>
+                                            <div>
+                                                Incoming: ₹{v.incomingMin} - ₹{v.incomingMax}
+                                            </div>
+                                            <div>
+                                                Weekend Activity: {v.weekendActivity}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            }
                         </div>
-                    </div>
-                ))}
-            </div>
-        </div>
+                    ) }
+               </CardContent>
+               </Card>
+        
 
-        {/* Vendor Details Panel */}
-        {selectedVendorGroup && (
+        {/*
+                {selectedVendorGroup && (
             <div className="rounded-2xl border p-6 bg-white">
+            */}
             {/* Header */}
-            <div className="flex items-center justify-between mb-4">
+            {/*<div className="flex items-center justify-between mb-4">
                 <div>
                     <h3 className="text-lg font-semibold">
                         {selectedVendorGroup} Vendors
@@ -109,21 +248,21 @@ export default function Categories() {
                 <button className="flex items-center gap-1 rounded-full bg-blue-500 text-white px-3 py-1 text-sm hover:bg-blue-600">
                     <Plus className="w-4 h-4"/> Add Vendor
                 </button>
-            </div>
+            </div>*/}
 
             {/* Search Bar */}
 
-            <div>
+            {/*<div>
                 <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
                 <input 
                 type="text"
                 placeholder="Search vendors..." 
                 className="w-full rounded-full border pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
-            </div>
+            </div>*/}
 
             {/* Empty State */}
-            <div className="flex flex-col items-center justify-center text-gray-500 py-12">
+           {/* <div className="flex flex-col items-center justify-center text-gray-500 py-12">
                 <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-10 h-10 mb-2"
@@ -142,9 +281,7 @@ export default function Categories() {
                         No vendors found in {selectedVendorGroup}
                     </p>
             </div>
-        </div>
-        )}
-        
+        </div>*/}
         </div>
     );
 }

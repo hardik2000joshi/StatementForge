@@ -1,6 +1,7 @@
 import * as React from "react";
 import {cn} from "@/lib/utils";
 import { propagateServerField } from "next/dist/server/lib/render-server";
+import { renderToHTMLImpl } from "next/dist/server/render";
 
 export function Card({
     className,
@@ -17,7 +18,7 @@ export function Card({
     );
 }
 
-export function cardHeader({
+export function CardHeader({
     className,
     ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
@@ -39,13 +40,27 @@ export  function CardContent({
     );
 }
 
-export function cardFooter ({
+export function CardFooter ({
     className,
     ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
     return (
         <div className= {cn("p-4 pt-0 flex items-center justify-between", className)}
         {...props} 
+        />
+    );
+}
+
+export function CardTitle({
+    className,
+    ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
+    return(
+        <h3 className={cn(
+            "text-lg font-semibold leading-none tracking-tight",
+            className
+        )}
+        {...props}
         />
     );
 }
