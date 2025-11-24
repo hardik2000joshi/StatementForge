@@ -34,13 +34,20 @@ export async function GET(){
 }
 
 // POST: create new category
-export async function Post(req: Request) {
+export async function POST(req: Request) {
     try{
     const data = await req.json();
-    const {name, description="", type="Expense", color="gray"} = data ?? {};
+    const {name, description="", type, color="gray"} = data ?? {};
     if(!name || typeof name !== "string") {
         return NextResponse.json({error: "Name required"}, {status: 400});
     } 
+    if (!type || !["Income", "Expense"].includes(type)) {
+        return NextResponse.json(
+            {error: "Invlid or missing category type"},
+            {status: 400}
+        );
+    }   
+    
 const client = await clientPromise;
 const db = client.db("myAccountDB");
 
@@ -75,7 +82,7 @@ catch (error) {
 }
 
 // Delete: Delete category
-export async function Delete(req: Request){
+export async function DELETE(req: Request){
     try {
           const {id} = (await req.json()) ?? {};
     if (!id) return NextResponse.json({

@@ -3,28 +3,51 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import Label from "@/components/ui/label";
 import Input from "@/components/ui/input";
-import { ArrowDownRight, ArrowUpRight, Plus, Search, Tag } from "lucide-react";
-import { useState } from "react";
+import {Plus, Trash2} from "lucide-react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
 import Button from "@/components/ui/Button";
 import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 
-export default function VendorsPage() {
-    const [vendors, setVendors] = useState<{
-        name: string;
-        category: string;
-        frequencyPerMonth: string;
-        outgoingMin: string;
-        outgoingMax: string;
-        incomingMin: string;
-        incomingMax: string;
-        weekendActivity: string;
-    }[]
-    >([]);
+/* Vendors Page :
+Left top : category list(fetched from app/api/vendorCategories)
+Right Bottom: vendors filtered by selected category only
+Add Vendor Modal: (Use selected category by category dropdown)
+*/
 
-    const [form, setForm] = useState({
+// types
+type Category = {
+    _id: string;
+    name: string;
+    description?: string;
+    type?: "Expense" | "Income" |string;
+    color?: string;
+};
+
+type Vendor = {
+    _id?: string;
+    name: string;
+    categoryId?: string;
+    category?: Category | null;
+    frequencyPerMonth?: number |string;
+    outgoingMin?: number | string;
+    outgoingMax?: number | string;
+    incomingMin?: number | string;
+    incomingMax?: number | string;
+    weekendActivity?: number | string;
+};
+
+export default function VendorsPage() {
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [loadingVendors, setLoadingVendors] = useState(false);
+
+    // add vendor modal
+    const [showVendorModal, setShowVendorModal] = useState(false);
+    const [form, setForm] = useState<Vendor>({
         name: "",
-        category: "",
+        categoryId: "",
         frequencyPerMonth: "",
         outgoingMin: "",
         outgoingMax: "",
@@ -33,17 +56,93 @@ export default function VendorsPage() {
         weekendActivity: "",
     });
 
-    const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    // fetch categories
+    async function fetchCategories() {
+        try {
+            const response = await fetch("/api/vendorCategories");
+            const json = await response.json();
+            if(!Array.isArray(json)){
+                setCategories([]);
+                return;
+            }
+            setCategories(json);
+            if(!selectedCategory && json.length > 0) setSelectedCategory(json[0]);
+        }
+        catch(error) {
+            console.error("fetch categories error:", error);
+        }
+    }
+
+    // fetch vendors for selected category
+    async function fetchVendors(categoryId?: string) {
+        if(!categoryId) {
+            setVendors([]);
+            return;
+        }
+        try {
+            setLoadingVendors(true);
+            const response = await fetch(`/api/vendors?categoryId=${encodeURIComponent(categoryId)}`);
+            const json = await response.json();
+            setVendors(Array.isArray(json)?json:[]);
+        }
+        catch(error) {
+            console.error("fetch vendors error:", error);
+        }
+        finally {
+            setLoadingVendors(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        if (selectedCategory) {
+            fetchVendors(selectedCategory._id);
+        }
+        else {
+            setVendors([]);
+        }
+    }, [selectedCategory]);
+
+    function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
         const {name, value} = e.target;
-        setForm({...form, [name]: value});
+        setForm((s) => ({...s, [name]: value}));
     };
 
-    const handleAddVendor = () => {
-        if (!form.name || !form.category) return alert("Please fill vendor name and category");
-        setVendors([...vendors, form]);
+    async function handleAddVendor(e?: React.FormEvent) {
+        e?.preventDefault();
+        const categoryId = form.categoryId || selectedCategory?._id;
+        if (!form.name?.trim() || !categoryId) return alert("Vendor name and category are required");
+        try {
+            const payload = {...form, categoryId};
+            const response = await fetch("/api/vendors", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const json = await response.json();
+            if(!response.ok) {
+                alert(json.error || "Failed to create vendor");
+                return;
+            }
+
+            if(json?.data && json.data.category && json.data.category._id === (selectedCategory?._id ?? "")) {
+                setVendors((p) => [json.data, ...p]);
+            }
+            else {
+                // created vendor might belong to different category: refetch current list
+                if(selectedCategory) {
+                    await fetchVendors(selectedCategory._id);
+                }
+            }
         setForm({
             name: "",
-            category: "",
+            categoryId: "",
             frequencyPerMonth: "",
             outgoingMin: "",
             outgoingMax: "",
@@ -51,237 +150,332 @@ export default function VendorsPage() {
             incomingMax: "",
             weekendActivity: "",
         });
-    };
+        setShowVendorModal(false);
+    }
+    catch(error) {
+        console.error("handleAddVendor error:", error);
+        alert("Failed to create vendor");
+    }
+    }
 
-    const [selectedCategory, setSelectedCategory] = useState<string | null> (null);
-    const [selectedVendorGroup, setSelectedVendorGroup] = useState<string | null> (null);
+    async function handleDeleteVendor(id: string) {
+        const confirmed = confirm("Delete this vendor?");
+        if(!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch("/api/vendors", {
+                method: "DELETE",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({id}),
+            });
 
+            const json = await response.json();
+            if(!response.ok) {
+                alert(json.error || "Failed to delete vendor");
+                return;
+            }
+            setVendors((p) => p.filter((v) => v._id !==id));
+        }
+        catch(error) {
+            console.error("deleteVendorError:", error);
+            alert("Failed to delete vendor");
+        }
+    }
+    
     return (    
         <div className="p-6 space-y-6">
-            <Card>
-               <CardHeader className="flex justify-between items-center">
-                <CardTitle className="text-lg font-semibold">
-                    Vendors
-                    </CardTitle>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button>
-                                <Plus size={16} />
-                                Add Vendor
-                            </Button>
-                            </DialogTrigger>
-
-                            <DialogContent className="max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        Add New Vendor
-                                        </DialogTitle>
-                                    </DialogHeader>
-                                    <div className="space-y-3">
-                                        <div>
-                                            <Label>Vendor Name</Label>
-                                            <Input
-                                            name="name"
-                                            placeholder="e.g. Amazon Web Services"
-                                            value={form.name}
-                                            onChange={handleInput}
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <Label>Vendor Category</Label>
-                                            <Input 
-                                            name="category"
-                                            placeholder="e.g. Cloud Services"
-                                            value={form.category}
-                                            onChange={handleInput}
-                                             />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <Label>
-                                                    Outgoing Min
-                                                </Label>
-                                                <Input
-                                                name="outgoingMin"
-                                                type="number"
-                                                placeholder="e.g.500"
-                                                value={form.outgoingMin}
-                                                onChange={handleInput}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <Label>
-                                                    Outgoing Max
-                                                </Label>
-                                                <Input 
-                                                name="outgoingMax"
-                                                type="number"
-                                                placeholder="e.g.50000"
-                                                value={form.outgoingMax}
-                                                onChange={handleInput}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <Label>
-                                                    Incoming Min
-                                                </Label>
-                                                <Input
-                                                name="incomingMin"
-                                                type="number"
-                                                placeholder="e.g. 100"
-                                                value={form.incomingMin}
-                                                onChange={handleInput}
-                                                 />
-                                            </div>
-                                            <div>
-                                                <Label>
-                                                    Incoming Max
-                                                </Label>
-                                                <Input
-                                                name="incomingMax"
-                                                type="number"
-                                                placeholder="e.g. 10000"
-                                                value={form.incomingMax} 
-                                                onChange={handleInput}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <Label>
-                                                Frequency (Per Month)
-                                            </Label>
-                                            <Input
-                                            name="frequencyPerMonth"
-                                            type="number"
-                                            placeholder="e.g. 1"
-                                            value={form.frequencyPerMonth}
-                                            onChange={handleInput}
-                                             />
-                                        </div>
-
-                                        <div>
-                                            <Label>
-                                                Weekend Activity(%)
-                                            </Label>
-                                            <Input 
-                                            name="weekendActivity"
-                                            type="number"
-                                            placeholder="e.g. 20"
-                                            value={form.weekendActivity}
-                                            onChange={handleInput}
-                                            />
-                                        </div>
-
-                                        <Button onClick={handleAddVendor} className="w-full">
-                                            Save Vendor
-                                        </Button>
-                                    </div>
-                            </DialogContent>
-                    </Dialog>
-               </CardHeader>
-
-               <CardContent>
-                {
-                    vendors.length === 0 ?(
-                        <p className="text-sm text-ghray-500">
-                            No Vendors added yet
-                        </p>
-                    ) :(
-                        <div className="grid gap-3">
-                            {
-                                vendors.map((v, a) => (
-                                    <div
-                                    key={a}
-                                    className="border p-3 rounded-lg bg-gray-50 flex flex-col"
-                                    >
-                                        <div className="font-medium">
-                                            {v.name}
-                                        </div>
-                                        <div className="text-sm text-gray-600">
-                                            Category: {v.category}
-                                        </div>
-                                        <div className="text-sm text-gray-700 space-y-1">
-                                            <div>
-                                                Frequency: {v.frequencyPerMonth} time(s) /month
-                                            </div>
-                                            <div>
-                                                outgoing: ₹{v.outgoingMin} - ₹{v.outgoingMax} 
-                                            </div>
-                                            <div>
-                                                Incoming: ₹{v.incomingMin} - ₹{v.incomingMax}
-                                            </div>
-                                            <div>
-                                                Weekend Activity: {v.weekendActivity}%
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    ) }
-               </CardContent>
-               </Card>
-        
-
-        {/*
-                {selectedVendorGroup && (
-            <div className="rounded-2xl border p-6 bg-white">
-            */}
             {/* Header */}
-            {/*<div className="flex items-center justify-between mb-4">
+            <div className="items-center justify-between">
+                <h1 className="text-xl font-semibold">
+                    Vendors
+                </h1>
+
                 <div>
-                    <h3 className="text-lg font-semibold">
-                        {selectedVendorGroup} Vendors
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                        Manage vendors for realistic transaction generation
-                    </p>
+                    <Button 
+                    onClick={() => {
+                        if(!selectedCategory) return alert("Select a category first");
+                        setShowVendorModal(true);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                        <Plus className="h-4 w-4 mr-2"/>
+                        Add Vendor
+                    </Button>
+                </div>
                 </div>
 
-                <button className="flex items-center gap-1 rounded-full bg-blue-500 text-white px-3 py-1 text-sm hover:bg-blue-600">
-                    <Plus className="w-4 h-4"/> Add Vendor
-                </button>
-            </div>*/}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Categories Panel */}
+                    <div className="lg:col-span-1">
+                        <Card>
+                            <CardHeader className="p-4">
+                                <CardTitle className="text-base font-semibold">
+                                    Categories
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-4">
+                                <div className="space-y-2">                                
+                                    {categories.map((c) => (
+                                        <button
+                                        key={c._id}
+                                        onClick={() => setSelectedCategory(c)}
+                                        className={`w-full text-left p-3 rounded-lg ${
+                                            selectedCategory?._id === c._id ? "bg-blue-50" : "bg-white"
+                                        } border`}
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-sm font-medium">
+                                                        {c.name}
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm text-gray-500">
+                                                    {/* Optionally vendor count*/}
+                                                </div>
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                {c.description}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-            {/* Search Bar */}
+                    {/* Vendors Panel */}
+                    <div className="lg:col-span-2">
+                        <Card>
+                            <CardHeader className="flex items-center justify-between p-4">
+                                <CardTitle className="text-base font-semibold">
+                                    {selectedCategory ? `${selectedCategory.name} Vendors`: "Select a Category"}
+                                </CardTitle>
+                            </CardHeader>
 
-            {/*<div>
-                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-3"/>
-                <input 
-                type="text"
-                placeholder="Search vendors..." 
-                className="w-full rounded-full border pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-            </div>*/}
+                            <CardContent className="p-4">
+                                <div>
+                                    <input
+                                    type="text"
+                                    placeholder="Search Vendors..."
+                                    className="w-full rounded-full border pl-4 pr-4 py-2 text-sm shadow-sm"
+                                    onChange={(e) => {
+                                        const q = e.target.value.toLowerCase().trim();
+                                        if (!q) {
+                                            if(selectedCategory) {
+                                                fetchVendors(selectedCategory._id);
+                                            }
+                                        }
+                                        else {
+                                            setVendors((prev) => prev.filter((v) => v.name.toLowerCase().includes(q)));
+                                        }
+                                    }}
+                                    />
+                                </div>
 
-            {/* Empty State */}
-           {/* <div className="flex flex-col items-center justify-center text-gray-500 py-12">
-                <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-10 h-10 mb-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentcolor"
-                >
-                    <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2h-3.586a1 1 0 01-.707-.293l-1.414-1.414A1 1 0 0013.586 3H10.414a1 1 0 00-.707.293L8.293 4.707A1 1 0 017.586 5H4a2 2 0 00-2 2z"
-                     />
-                    </svg>
-                    <p>
-                        No vendors found in {selectedVendorGroup}
-                    </p>
-            </div>
-        </div>*/}
+                                <div className="mt-6 min-h-[160px]">
+                                    {
+                                        loadingVendors ? (
+                                            <div>
+                                                Loading Vendors...
+                                                </div>
+                                        ) : !selectedCategory ?(
+                                            <div className="text-gray-500">
+                                                Choose a category to view vendors.
+                                            </div>
+                                        ) : vendors.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+                                                <div>
+                                                    No Vendors found in {selectedCategory.name}
+                                                </div>
+                                            </div>
+                                        ): (
+                                            <div className="grid gap-3">
+                                                {
+                                                    vendors.map((v) => (
+                                                        <div key={v._id} className="border p-3 rounded-lg bg-gray-50 flex flex-col">
+                                                            <div className="flex items-center justify-between">
+                                                                <div>
+                                                                    <div className="font-medium">
+                                                                        {v.name}
+                                                                    </div>
+                                                                    <div className="text-sm text-gray-600">
+                                                                        Category: {selectedCategory?.name}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex gap-2 items-center">
+                                                                    <button className="text-red-600" onClick={() => handleDeleteVendor(String(v._id))}>
+                                                                        <Trash2 />
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="text-sm text-gray-700 mt-2 space-y-1">
+                                                                <div>
+                                                                    Frequency: {v.frequencyPerMonth ?? "-"} /month
+                                                                </div>
+                                                                <div>
+                                                                    Outgoing: {v.outgoingMin ?? "-"} - {v.outgoingMax ?? "-"} 
+                                                                </div>
+                                                                <div>
+                                                                    Incoming: {v.incomingMin ?? "-"} - {v.incomingMax ?? "-"}
+                                                                </div>
+                                                                <div>
+                                                                    Weekend Activity: {v.weekendActivity ?? "-"} %
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                }
+                                            </div>
+                                        )
+                                        }
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Add vendor modal */}
+                {showVendorModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
+                            <h2 className="text-lg font-semibold mb-4">
+                                Add Vendor
+                            </h2>
+                            <form onSubmit={handleAddVendor} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Vendor Name
+                                    </label>
+                                    <input
+                                    name="name"
+                                    value={form.name}
+                                    onChange={handleInputChange}
+                                    type="text" 
+                                    placeholder="e.g. Amazon Web Services"
+                                    className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Vendor Category
+                                    </label>
+                                    <select 
+                                    name="categoryId" 
+                                    value={form.categoryId ?? selectedCategory?._id ?? ""}
+                                    onChange={handleInputChange}
+                                    className="w-full border rounded-md px-3 py-2 text-sm"
+                                    >
+                                        <option value="">
+                                            Select Category
+                                        </option>
+                                        {categories.map((c) => (
+                                            <option key={c._id} value={c._id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Outgoing Min
+                                        </label>
+                                        <input
+                                        name="outgoingMin"
+                                        value={String(form.outgoingMin ?? "")}
+                                        onChange={handleInputChange}
+                                        type="number"
+                                        className="w-full border rounded-md px-3 py-2 text-sm"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Outgoing Max
+                                        </label>
+                                        <input 
+                                        name="outgoingMax"
+                                        value={String(form.outgoingMax ?? "")}
+                                        onChange={handleInputChange}
+                                        type="number"
+                                        className="w-full border rounded-md px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Incoming Min
+                                        </label>
+                                        <input
+                                        name="incomingMin"
+                                        value={String(form.incomingMin ?? "")}
+                                        onChange={handleInputChange}
+                                        type="number"
+                                        className="w-full border rounded-md px-3 py-2 text-sm"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Incoming Max
+                                        </label>
+                                        <input 
+                                        name="IncomingMax"
+                                        value={String(form.incomingMax ?? "")}
+                                        onChange={handleInputChange}
+                                        type="number"
+                                        className="w-full border rounded-md px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Frequency (Per Month)
+                                    </label>
+                                    <input 
+                                    name="frequencyPerMonth"
+                                    value={String(form.frequencyPerMonth ?? "")}
+                                    onChange={handleInputChange}
+                                    type="number"
+                                    className="w-full border rounded-md px-3 py-2 text-sm"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Weekend Activity(%)
+                                    </label>
+                                    <input 
+                                    name="weekendActivity"
+                                    value={String(form.weekendActivity ?? "")}
+                                    onChange={handleInputChange}
+                                    type="number"
+                                    className="w-full border rounded-md px-3 py-2 text-sm"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3 mt-4">
+                                    <button type="button" onClick={() => setShowVendorModal(false)} className="px-4 py-2 rounded-lg border text-sm">
+                                        Cancel
+                                    </button>
+                                    <button 
+                                    type="submit"
+                                    className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm"
+                                    >
+                                        Save Vendor
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
         </div>
     );
 }

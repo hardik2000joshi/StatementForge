@@ -4,7 +4,6 @@
 import clientPromise from "@/lib/db";
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import { url } from "inspector";
 
 // Convert vendor doc and nested category fields to client-friendly objects
 function toClientVendor(doc: any){
