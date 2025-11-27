@@ -1,7 +1,6 @@
     import clientPromise from "@/lib/db";
     import { NextRequest, NextResponse } from "next/server";
     import { ObjectId } from "mongodb";
-import { error } from "console";
 
     export async function GET(req: NextRequest) {
         try {
@@ -119,29 +118,38 @@ import { error } from "console";
       ? new Date(sortedTxns[totalTransactions - 1].date).toLocaleDateString()
       : "-";
 
+      // Compute running balance
+      let runningBalance = openingBalance;
+      
       sortedTxns.forEach((t) => {
-        if (t.type === "credit")
-            balance += t.amount;
-        else balance -= t.amount;
-            });
+        if (t.type === "credit") {
+            runningBalance += t.amount;
+        }
+        else {
+            runningBalance -= t.amount;
+        }
+  t.balance = runningBalance;
+});
 
             // prepare transactions HTML for {{transactions}}
             const txnHtml = sortedTxns.map((t) => `
                 <tr>
                 <td>
-                 ${t.date}
+                 ${new Date(t.date).toLocaleDateString("en-GB")}
                  </td>
                  <td>
                  ${t.description}
                  </td>
-                 <td class="amount-debit">
-                 ${t.type === "debit" ? "£" + t.amount : ""}
-                 </td>
-                 <td class="amount-credit">
-                 ${t.type === "credit" ? "£" + t.amount : ""}
-                 </td>
+                    <td class="${
+          t.type === "credit" ? "amount-credit" : "amount-debit"
+        }">
+          ${t.type === "credit" ? "+" : "-"}£${t.amount}
+        </td>
                  <td class="balance">
                  £${t.balance}
+                 </td>
+                 <td>
+                 ${t.type === "credit" ? "Income" : "Expense"}
                  </td>
                  </tr>
                 `).join("");

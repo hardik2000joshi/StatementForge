@@ -36,10 +36,7 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
 
     let transactions: any[] = [];
     let openingBalance = 0;
-    let balance = 0;
-    let periodStart = "";
-    let periodEnd = "";
-    let totalTransactions = 0;
+
     if (generatorId === "all") {
       console.log("Fetching all generator documents...");
       // merge all generator docs
@@ -91,44 +88,69 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    balance = openingBalance;
-    totalTransactions = sortedTxns.length;
-    periodStart = totalTransactions
+    const userPeriodStart = url.searchParams.get("periodStart");
+    const userPeriodEnd = url.searchParams.get("periodEnd");
+
+    const totalTransactions = sortedTxns.length;
+    const periodStart = userPeriodStart
+    ? new Date (userPeriodStart).toLocaleDateString()
+    : totalTransactions
       ? new Date(sortedTxns[0].date).toLocaleDateString()
       : "";
-    periodEnd = totalTransactions
-      ? new Date(sortedTxns[totalTransactions - 1].date).toLocaleDateString()
+
+    const periodEnd = userPeriodEnd
+    ? new Date (userPeriodEnd).toLocaleDateString()
+    :totalTransactions
+      ? new Date(sortedTxns[sortedTxns.length - 1].date).toLocaleDateString()
       : "";
 
-    // Calculate balance dynamically
-    sortedTxns.forEach((t) => {
-      if (t.type === "credit") balance += t.amount;
-      else balance -= t.amount;
+    // Compute running balance per transaction
+    let runningBalance = openingBalance;
+    sortedTxns= sortedTxns.map((t) => {
+      const amount = Number(t.amount) || 0;
+
+      if (t.type === "credit") {
+        runningBalance += amount;
+      }
+      
+      else {
+        runningBalance -= amount;
+      } 
+
+      return {
+        ...t,
+        amount,
+        balance: runningBalance,
+      };
     });
+    const closingBalance = runningBalance;
 
     // Build transaction rows dynamically
     const txnHtml = sortedTxns
       .map(
-        (t) => `
+        (t) => {
+          const formattedDate = new Date(t.date).toLocaleDateString("en-GB");
+          return `
           <tr class="selectable">
             <td>
-            ${t.date}
+            ${formattedDate}
             </td>
             <td>
             ${t.description || "-"}
             </td>
-            <td class="amount-debit">
-            ${t.type === "debit" ? "£" + t.amount : ""}
-            </td>
-            <td class="amount-credit">
-            ${t.type === "credit" ? "£" + t.amount : ""}
+            <td class="${t.type==="credit" ? "amount-credit" : "amount-debit"}">
+            ${t.type === "credit" ? "+" : "-"} £${t.amount}
             </td>
             <td class="balance">
-            £${t.balance || ""}
+            £${t.balance}
             </td>
+             <td>
+             ${t.type === "credit" ? "Income" : "Expense"}
+             </td>
           </tr>
-        `
-      )
+        `;
+        }
+)
       .join("");
 
     // Replace placeholders in HTML
@@ -140,7 +162,7 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
     htmlContent = htmlContent.replace(/{{periodEnd}}/g, periodEnd);
     htmlContent = htmlContent.replace(/{{totalTransactions}}/g, totalTransactions.toString());
     htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
-    htmlContent = htmlContent.replace(/{{closingBalance}}/g, balance.toString());
+    htmlContent = htmlContent.replace(/{{closingBalance}}/g, closingBalance.toString());
     htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
 
     // Remove leftover Handlebars placeholders
@@ -157,7 +179,7 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
         company,
         transactions: sortedTxns,
         openingBalance,
-        closingBalance: balance,
+        closingBalance,
         periodStart,
         periodEnd,
         totalTransactions,

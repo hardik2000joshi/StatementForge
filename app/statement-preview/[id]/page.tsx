@@ -14,15 +14,18 @@ interface Template {
 // in Next.js 15+ when we mark component as "use client", params is a promise.
 // And when params is promise, we must unwrap it using React.use().
 
-export default function statementPreviewPage({params}: {params: Promise<{id: string}>}) {
-    const resolvedParams = React.use(params);
+export default function statementPreviewPage({params}: {params: Promise<{id: string}>;}) {
+     const resolvedParams = React.use(params) as { id: string };
     const [data, setData] = useState<any>(null);
     const [template, setTemplate] = useState<Template | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [mergedHtml, setMergedHtml] = useState<string | null>(null);
 
     const searchParams = useSearchParams();
     const templateName = searchParams.get("template") || "Bank Statement";
+    const generatorId = resolvedParams.id;
 
+    
     useEffect(() => {
         // fetching the data
         const fetchData = async() => {
@@ -33,31 +36,42 @@ export default function statementPreviewPage({params}: {params: Promise<{id: str
                     throw new Error("Missing Company Id");
                 }
 
-                // fetch generator statement
-                const response = await fetch(`/api/bankStatements/${resolvedParams.id}?companyId=${companyId}`);
-                // json response
-                const json = await response.json();
-                // if response is not valid or fine: error occured- json error or failed to load statement
-                // ||(or) logical or operator
-                if(!response.ok){
-                    throw new Error(json.message || "Failed to load statement");
+                // Fetch generator document to get saved periodStart/periodEnd
+                const gen = await fetch (`/api/generator/${generatorId}`);
+                const genJson = await gen.json();
+                 if (!gen.ok) {
+                    throw new Error(genJson.message || genJson.error || "Failed to load generator");
                 }
 
-                /*if (!json.success) {
-                    throw new Error("Statement not found");
-                }*/
-                    setData(json);
+                const genData = genJson.data?.statement ?? genJson.data ?? genJson;
+                const periodStart = genData.periodStart;
+                const periodEnd = genData.periodEnd;
+
+                // fetch bank statement html
+                const bankResponse = await fetch(`/api/bankStatements/${generatorId}?companyId=${encodeURIComponent(companyId)}&periodStart=${encodeURIComponent(periodStart)}&periodEnd=${encodeURIComponent(periodEnd)}`);
+                // json response
+                const bankJson = await bankResponse.json();
+                // if response is not valid or fine: error occured- json error or failed to load statement
+                // ||(or) logical or operator
+                if(!bankResponse.ok){
+                    throw new Error(bankJson.message || bankJson.error || "Failed to load bank statement");
+                }
+                    setData(bankJson);
 
                     // fetch template
                     const tResponse = await fetch(`/api/templates?name=${encodeURIComponent(templateName)}`);
                     const tjson = await tResponse.json();
-                    if (tjson.success && tjson.data.length>0) {
+                    if (tjson.success && Array.isArray(tjson.data) && tjson.data.length > 0) {
                         setTemplate(tjson.data[0]);
+                    }
+                    else {
+                        setTemplate(null);
                     }
                 }
 
-            catch(err) {
-                console.error("Error fetching data:", err) ;
+            catch(err: any) {
+                console.error("Error loading preview:", err);
+                // optionally show UI feedback
             }
 
             finally {
@@ -65,21 +79,17 @@ export default function statementPreviewPage({params}: {params: Promise<{id: str
             }
         };
         fetchData();
-    }, [resolvedParams.id, templateName]);
+    }, [generatorId, templateName]);
 
-    if(isLoading) {
-        return <div className="p-10 text-center">
-            Loading Statement Preview...
-        </div>;
-    }
-    if (!data?.html || !template) {
-        return <div className="p-10 text-center text-red-600">
-            Statement  or Template not found
-        </div>;
+    // Merge template and data after both are loaded
+  useEffect(() => {
+    if (!data || !template) {
+      setMergedHtml(null);
+      return;
     }
 
-    // Merge template html and data
     let htmlContent = template.htmlFile || "";
+
     htmlContent = htmlContent.replace(/{{bankName}}/g, data.company || "");
     htmlContent = htmlContent.replace(/{{accountNumber}}/g, data.accountNumber || "");
     htmlContent = htmlContent.replace(/{{periodStart}}/g, data.periodStart || "");
@@ -88,9 +98,31 @@ export default function statementPreviewPage({params}: {params: Promise<{id: str
     htmlContent = htmlContent.replace(/{{closingBalance}}/g, data.closingBalance || "");
     htmlContent = htmlContent.replace(/{{totalTransactions}}/g, data.totalTransactions?.toString() || "");
 
-    // inject css inline
-    if (template.cssFile)
+     // Inject template CSS if present
+    if (template.cssFile) {
+      // insert stylesheet just before </head> if exists, otherwise prepend
+      if (htmlContent.includes("</head>")) {
         htmlContent = htmlContent.replace("</head>", `<style>${template.cssFile}</style></head>`);
+      } else {
+        htmlContent = `<style>${template.cssFile}</style>` + htmlContent;
+      }
+    }
+
+     setMergedHtml(htmlContent);
+  }, [data, template]);
+
+
+    if(isLoading) {
+        return (
+        <div className="p-10 text-center">
+            Loading Statement Preview...
+        </div>
+        );
+    }
+
+     if (!mergedHtml) {
+    return <div className="p-10 text-center text-red-600">Statement or Template not found</div>;
+  }
 
     return (
         <div className="p-10">

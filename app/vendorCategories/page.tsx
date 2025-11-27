@@ -1,5 +1,4 @@
 "use client";
-
 import Button from "@/components/ui/Button";
 import {Card, CardContent} from "@/components/ui/card";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -33,33 +32,6 @@ type Vendor = {
     incomingMax?: number | string;
     weekendActivity?: number | string;
 };
-
-/*const categories = [
-    {
-        name: "AWS",
-        description: "No description provided",
-        type: "Expense",
-        color: "bg-red-50",
-    },
-    {
-        name: "Cloud Services",
-        description: "Cloud computing and hosting services",
-        type: "Expense",
-        color: "bg-blue-50",
-    },
-    {
-        name: "Payment Processors",
-        description: "Settlements from payment providers used for payment processing of transactions",
-        type: "Income",
-        color: "bg-blue-100",
-    },
-    {
-        name: "Utility Bills",
-        description: "Utility Bills",
-        type: "Expense",
-        color: "bg-yellow-100",
-    },
-];*/
 
 export default function VendorCategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);

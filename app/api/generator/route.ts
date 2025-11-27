@@ -10,9 +10,13 @@ interface GenerationRules {
     categories: string[];
     style: "basic" | "detailed" | "minimal";
 }
+
 // Generate random transactions
-function generateTransactions(rules: GenerationRules){
+function generateTransactions(rules: GenerationRules, fromDate: string, toDate:string){
     const transactions:any[] = [];
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+
     for(let i=0; i<rules.txnsPerWeek; i++) {
         // Decide is tranaction incoming or outgoing:
         const isCredit = i % 2 === 0;
@@ -22,7 +26,14 @@ function generateTransactions(rules: GenerationRules){
             Math.random() * (rules.outgoingMax - rules.outgoingMin + 1) + rules.outgoingMin
         );
         const category = rules.categories[Math.floor(Math.random() * rules.categories.length)];
-        // Define function randomDateInLastWeek
+
+        // Generate random date between user selected range
+        function randomDateSelection(start: Date, end: Date) {
+            return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        }
+
+        const txnDate = randomDateSelection(start, end);
+        /* Define function randomDateInLastWeek
         function randomDateInLastWeek() {
             const now = new Date();
             const past = new Date();
@@ -30,34 +41,34 @@ function generateTransactions(rules: GenerationRules){
             return new Date(
                 past.getTime() + Math.random() + (now.getTime() - past.getTime())
             );
-        }
+        }*/
         // Format based on style
         if (rules.style === 'basic') {
             transactions.push({
                 _id: new ObjectId(),
-                date: randomDateInLastWeek(),
+                date: txnDate,
                 description: `Txn ${i+1}`,
                 amount,
-                type: i % 2 === 0 ? "credit" : "debit",
+                type: isCredit ? "credit" : "debit",
             });
         }
         else if(rules.style === "detailed") {
             transactions.push({
                 _id: new ObjectId(),
-                date: randomDateInLastWeek(),
+                date: txnDate,
                 description: `${category} Purchase`,
                 category,
                 amount,
-                type: i % 2 === 0 ? "credit" :"debit",
+                type: isCredit ? "credit" :"debit",
                 balanceAfter:
                 5000 +
-                (i % 2 === 0 ? amount: -amount)
+                (isCredit ? amount: -amount),
             });
         }
         else if(rules.style === "minimal") {
             transactions.push({
                 _id: new ObjectId(),
-                date: randomDateInLastWeek(),
+                date: txnDate,
                 amount,
             });
         }
@@ -69,6 +80,16 @@ export async function POST(req: Request) {
     try {
         const body = await req.json();
         const rules : GenerationRules = body.rules;
+
+        const fromDate: string = body.fromDate;
+        const toDate: string = body.toDate;
+
+        if(!fromDate || !toDate) {
+            return NextResponse.json(
+                {success: false, error: "fromDate and toDate are required"},
+                {status: 400}
+            );
+        }
         const company = body.company || {
             companyName: "Webnatics Ltd",
             bankName: "Secure Bank Ltd",
@@ -87,7 +108,8 @@ export async function POST(req: Request) {
                 });
         }
         console.log("Request Body:", body);
-        const transactions = generateTransactions(rules);
+        // Generate transactions within selected date range
+        const transactions = generateTransactions(rules, fromDate, toDate);
 
         const openingBalance = 5000;
         const totalTransactions = transactions.length;
@@ -102,14 +124,12 @@ export async function POST(req: Request) {
         }, openingBalance);
 
         // calculate periodStart and periodEnd dynamically from transactions
-        const dates = transactions.map(t => new Date(t.date));
-        const periodStart = new Date(Math.min(...dates.map(d => d.getTime()))).toISOString().split("T")[0];
-        const periodEnd = new Date(Math.max(...dates.map(d => d.getTime()))).toISOString().split("T")[0];
-
+        const periodStart = fromDate;
+        const periodEnd = toDate;
         const statement = {
             company,
             statementType,
-            accountNumber: "12345678",
+            accountNumber: "",
             periodStart,
             periodEnd,
             openingBalance,

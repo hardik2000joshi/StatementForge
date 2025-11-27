@@ -1,13 +1,9 @@
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import Label from "@/components/ui/label";
-import Input from "@/components/ui/input";
 import {Plus, Trash2} from "lucide-react";
 import { useEffect, useState } from "react";
-import { Dialog, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
 import Button from "@/components/ui/Button";
-import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 
 /* Vendors Page :
 Left top : category list(fetched from app/api/vendorCategories)

@@ -171,7 +171,7 @@ export default function TemplatesPage() {
                 </div>
 
                 <div className="flex gap-3 items-center">
-                  {/* 👁️ View Icon */}
+                  {/* View Icon */}
                   <button
                     onClick={() => handleViewTemplate(template)}
                     className="text-green-600 hover:text-green-800"

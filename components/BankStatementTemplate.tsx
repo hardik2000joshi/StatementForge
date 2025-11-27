@@ -190,14 +190,14 @@ if (template.cssFile) {
             <td>
                 ${txn.description}
             </td>
-            <td class="debit">
-                ${txn.debit ? txn.debit : '-'}
+            <td class="${txn.debit ? 'amount-debit' : 'amount-credit'}">
+                ${txn.debit ? `-£{txn.debit}` : `+£{txn.credit}`}
             </td>
-            <td class="credit">
-            ${txn.credit ? txn.credit : '-'}
+            <td class="balance">
+            ${txn.balance}
             </td>
             <td>
-                ${txn.balance}
+                ${txn.debit ? "Expense" : "Income"}
             </td>   
         </tr>
     `).join('');
@@ -313,15 +313,15 @@ if (template.cssFile) {
                                 </th>
 
                                 <th className="border px-4 py-2">
-                                    Debit(Withdrawl)
-                                </th>
-
-                                <th className="border px-4 py-2">
-                                    Credit(Deposit)
+                                    Amount
                                 </th>
 
                                 <th className="border px-4 py-2">
                                     Balance
+                                </th>
+
+                                <th className="border px-4 py-2">
+                                    Type
                                 </th>
                             </tr>
                         </thead>
@@ -349,16 +349,16 @@ if (template.cssFile) {
                                             {txn.description}
                                         </td>
 
-                                        <td className={`border px-4 py-2 ${txn.debit ? 'Expense' : ''}`}>
-                                            {txn.debit}
-                                        </td>
-
-                                        <td className={`border px-4 py-2 ${txn.credit ? 'Income' : ''}`}>
-                                            {txn.credit}
+                                        <td className={`border px-4 py-2 font-semibold ${txn.debit ? "text-red-600" : "text-green-600"}`}>
+                                            {txn.debit ? `-£${txn.debit}` : `+£${txn.credit}`}
                                         </td>
 
                                         <td className="border px-4 py-2">
                                             {txn.balance}
+                                        </td>
+
+                                        <td className="border px-4 py-2">
+                                            {txn.debit ? "Expense" : "Income"}
                                         </td>
                                     </tr>
                                 ))}

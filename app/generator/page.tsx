@@ -1,7 +1,6 @@
     "use client";
-
     import Button from "@/components/ui/Button";
-    import { Download, DownloadIcon, Eye, Save, TicketX, Trash2, X } from "lucide-react";
+    import { Download, DownloadIcon, Eye, Save, Trash2, X } from "lucide-react";
     import { useEffect, useState } from "react";
     import { toast } from "sonner";
 
@@ -28,7 +27,6 @@
   categories: string[];
   style: "basic" | "detailed" | "minimal";
 }
-
 
     export default function GeneratorPage () {
         const [recentGenerations, setRecentGenerations] = useState<Generation[]>([]); 
@@ -104,7 +102,15 @@
     const [transactions, setTransactions] = useState<any[]>([]);
     const [companies, setCompanies] = useState<any[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+    const [vendorCategories, setVendorCategories] = useState<any[]>([]);
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [selectedVendorCategoryId, setSelectedVendorCategoryId] = useState("");
+    const [selectedVendorId, setSelectedVendorId] = useState("");
     const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
+
+    // Add state for start and end date
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     // Fetch companies and templates
     useEffect(() => {
@@ -131,6 +137,17 @@
         else {
             setTemplates([]);
         }
+
+        // Fetch vendor categories
+
+    const vendorResponse =  await fetch("/api/vendorCategories");
+    const vendorData =  await vendorResponse.json();
+    if (Array.isArray(vendorData.data)) {
+        setVendorCategories(vendorData.data);
+        if (vendorData.data.length > 0) {
+            setSelectedVendorCategoryId(vendorData.data[0]._id);
+        }
+    }
         }
         fetchData();
     }, []);
@@ -149,6 +166,11 @@
             return;
         }
 
+        if(!startDate || !endDate) {
+            toast.error("Please select start date and end date");
+            return;
+        }
+
         setLoading(true);
         try {
             const txnRes = await fetch("/api/generator", {
@@ -157,7 +179,9 @@
                     "Content-Type" : "application/json"
                 },
                 body: JSON.stringify({
-                    company: companies.find(c => c._id === selectedCompanyId) ?.companyName || "Unknown Company",               
+                    company: companies.find(c => c._id === selectedCompanyId) ?.companyName || "Unknown Company",   
+                    fromDate: startDate,
+                    toDate: endDate,          
                     rules,         
                 }),
             });
@@ -498,6 +522,8 @@
                                     </div>
                                 <input 
                                 type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
                                 className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
                                 />
                                 </div>
@@ -506,7 +532,10 @@
                                     <div className="mb-1 text-sm font-medium text-gray-700">
                                         To Date
                                     </div>
-                                <input type="date" 
+                                <input 
+                                type="date" 
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
                                 className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 text-sm"
                                 />
                                 </div>
