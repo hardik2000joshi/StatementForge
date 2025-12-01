@@ -139,13 +139,22 @@
         }
 
         // Fetch vendor categories
+    const categoryResponse =  await fetch("/api/vendorCategories");
+    const categoryData =  await categoryResponse.json();
+    if (Array.isArray(categoryData.data)) {
+        setVendorCategories(categoryData.data);
+        if (categoryData.data.length > 0) {
+            setSelectedVendorCategoryId(categoryData.data[0]._id);
+        }
+    }
 
-    const vendorResponse =  await fetch("/api/vendorCategories");
-    const vendorData =  await vendorResponse.json();
-    if (Array.isArray(vendorData.data)) {
-        setVendorCategories(vendorData.data);
-        if (vendorData.data.length > 0) {
-            setSelectedVendorCategoryId(vendorData.data[0]._id);
+    // Fetch vendors
+    const vendorResponse = await fetch("/api/vendors");
+    const vendorData = await vendorResponse.json();
+    if(Array.isArray(vendorData.data)) {
+        setVendors(vendorData.data);
+        if(vendorData.data.length>0) {
+            setSelectedVendorId(vendorData.data[0]._id);
         }
     }
         }
@@ -180,6 +189,9 @@
                 },
                 body: JSON.stringify({
                     company: companies.find(c => c._id === selectedCompanyId) ?.companyName || "Unknown Company",   
+                    templateId: selectedTemplateId,
+                    vendorCategoryId: selectedVendorCategoryId,
+                    vendorId: selectedVendorId,
                     fromDate: startDate,
                     toDate: endDate,          
                     rules,         
@@ -647,6 +659,46 @@
                                 {t.name}
                             </option>
                         ))}
+                    </select>
+                    </div>
+
+                    {/* Vendor Category Selector */}
+                    <div>
+                    <label className="block mb-1 font-medium">
+                    Vendor Category
+                    </label>
+                    <select value={selectedVendorCategoryId}
+                    onChange={(e) => setSelectedVendorCategoryId(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2"
+                    >
+                    {vendorCategories.map((cat) => (
+                    <option 
+                    key={cat._id}
+                    value={cat._id}
+                    >
+                    {cat.name} ({cat.type})
+                    </option>
+                    ))}
+                    </select>
+                    </div>
+
+                    {/* Vendor Selector */}
+                    <div>
+                    <label className="block mb-1 font-medium">
+                    Vendors
+                    </label>
+                    <select
+                    value={selectedVendorId}
+                    onChange={(e) => setSelectedVendorId(e.target.value)}
+                    className="w-full border rounded-lg px-3 py-2"
+                    >
+                    {vendors.
+                    filter(v => v.categoryId === selectedVendorCategoryId)
+                    .map((vendor) => (
+                        <option key={vendor._id} value={vendor._id}>
+                            {vendor.name}
+                        </option>
+                    ))}
                     </select>
                     </div>
 

@@ -111,6 +111,23 @@ export default function statementPreviewPage({params}: {params: Promise<{id: str
      setMergedHtml(htmlContent);
   }, [data, template]);
 
+  useEffect(() => {
+    if (!mergedHtml) return;
+    const saveHtml = async () => {
+        try {
+            await fetch(`/api/generator/${generatorId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html: mergedHtml }),
+      });
+        }
+        catch (err) {
+      console.error("Failed to save merged HTML:", err);
+    }
+    };
+
+    saveHtml();
+  }, [mergedHtml, generatorId]);
 
     if(isLoading) {
         return (

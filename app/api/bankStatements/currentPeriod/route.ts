@@ -161,13 +161,13 @@
                 htmlContent = htmlContent.replace(/{{accountNumber}}/g, company.accountNumber || "");
                 htmlContent = htmlContent.replace(/{{periodStart}}/g, periodStart);
                 htmlContent = htmlContent.replace(/{{periodEnd}}/g, periodEnd);
-                htmlContent = htmlContent.replace(/{{totalTransactions}/g, totalTransactions.toString());
+                htmlContent = htmlContent.replace(/{{totalTransactions}}/g, totalTransactions.toString());
                 htmlContent =htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
                 htmlContent = htmlContent.replace(/{{closingBalance}}/g, balance.toString());
                 htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
 
                  if (template.cssFile) htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
-
+                 
             // Return Combined Data
             return NextResponse.json({
                 html: htmlContent,

@@ -45,3 +45,47 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
         });
     } 
 }
+
+export async function PUT(req: Request, { params }: {params: {id: string}}) {
+  try {
+
+    const { id } = params;
+    const { mergedHtml } = await req.json();  
+
+    if (!mergedHtml) {
+      return NextResponse.json(
+        { success: false, message: "mergedHtml missing"},
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db("myAccountDB");
+
+    const result = await db.collection("generator").findOneAndUpdate(
+      {_id: new ObjectId(id) },
+      {
+        $set: { "statement.html": mergedHtml }
+      },
+      {returnDocument: "after"}
+    );
+
+    if (!result || !result.value) {
+  return NextResponse.json(
+    { success: false, message: "Generator not found" },
+    { status: 404 }
+  );
+}
+    return NextResponse.json({ 
+        success: true, 
+        data: result.value 
+    });
+  } 
+  catch (error) {
+    console.error("UPDATE GENERATOR ERROR:", error);
+    return NextResponse.json(
+      { success: false, error: "Server error" },
+      { status: 500 }
+    );
+  }
+}

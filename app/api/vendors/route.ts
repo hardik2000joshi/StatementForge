@@ -131,7 +131,7 @@ export async function POST(req: Request) {
 }    // Post Request finished
 
 // Delete Vendor
-export async function Delete(req: Request) {
+export async function DELETE(req: Request) {
     try {
         const {id} = (await req.json()) ?? {};
         if (!id) {

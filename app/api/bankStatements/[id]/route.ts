@@ -166,12 +166,17 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
     htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
 
     // Remove leftover Handlebars placeholders
-    htmlContent = htmlContent.replace(/{{[#\/](each|if)[^}]*}}/g, "");
+    htmlContent = htmlContent
+    .replace(/{{#each [^}]+}}/g, "")
+  .replace(/{{\/each}}/g, "")
+  .replace(/{{#if [^}]+}}/g, "")
+  .replace(/{{\/if}}/g, "");
+
     // Inject CSS if exists
     if (template.cssFile) {
       htmlContent = htmlContent.replace("</head>", `<style>${template.cssFile}</style></head>`);
     }
-
+    
     return NextResponse.json(
       {
         html: htmlContent,
