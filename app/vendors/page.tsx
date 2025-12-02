@@ -422,7 +422,7 @@ export default function VendorsPage() {
                                             Incoming Max
                                         </label>
                                         <input 
-                                        name="IncomingMax"
+                                        name="incomingMax"
                                         value={String(form.incomingMax ?? "")}
                                         onChange={handleInputChange}
                                         type="number"

@@ -86,17 +86,37 @@ export async function POST(req: Request) {
             });
         }
 
+        // normalize numeric fields
+        const parsed = {
+            frequencyPerMonth: Number(frequencyPerMonth) || 0,
+            outgoingMin: outgoingMin !== undefined && outgoingMin !== "" ? Number(outgoingMin) : null,
+            outgoingMax: outgoingMax !== undefined && outgoingMax !== "" ? Number(outgoingMax) : null,
+            incomingMin: incomingMin !== undefined && incomingMin !== "" ? Number(incomingMin) : null,
+            incomingMax: incomingMax !== undefined && incomingMax !== "" ? Number(incomingMax) : null,
+            weekendActivity: Number(weekendActivity) || 0,
+        };
+
+        // Determine vendor type from fields
+        let vendorType: "income" | "expense" = "expense";
+        if (parsed.incomingMin !== null || parsed.incomingMax !== null) {
+            vendorType = "income";
+        }
+        else if (parsed.outgoingMin !== null || parsed.outgoingMax !== null) {
+            vendorType = "expense";
+        }
+
         const client = await clientPromise;
         const db = client.db("myAccountDB");
         const result = await db.collection("vendors").insertOne({
             name,
             categoryId : new ObjectId(String(categoryId)),
-            frequencyPerMonth,
-            outgoingMin,
-            outgoingMax,
-            incomingMin,
-            incomingMax,
-            weekendActivity,
+            frequencyPerMonth: parsed.frequencyPerMonth,
+            outgoingMin: parsed.outgoingMin,
+            outgoingMax: parsed.outgoingMax,
+            incomingMin: parsed.incomingMin,
+            incomingMax: parsed.incomingMax,
+            weekendActivity: parsed.weekendActivity,
+            vendorType,
             createdAt: new Date(),
         });
 

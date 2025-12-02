@@ -1,7 +1,5 @@
  import clientPromise from "@/lib/db";
-import { error } from "console";
 import {ObjectId} from "mongodb";
-import { vendored } from "next/dist/server/route-modules/app-page/module.compiled";
 import { NextResponse } from "next/server";
 interface GenerationRules {
     txnsPerWeek: number;
@@ -20,23 +18,43 @@ function generateTransactions(rules: GenerationRules, fromDate: string, toDate:s
     const end = new Date(toDate);
 
     for(let i=0; i<rules.txnsPerWeek; i++) {
-        // Decide is tranaction incoming or outgoing:
-        const isCredit = i % 2 === 0;
-        const amount = isCredit ? Math.floor(
-            Math.random() * (rules.incomingMax - rules.incomingMin + 1) + rules.incomingMin
-        ) : Math.floor(
-            Math.random() * (rules.outgoingMax - rules.outgoingMin + 1) + rules.outgoingMin
-        );
-        const category = rules.categories[Math.floor(Math.random() * rules.categories.length)];
-        const vendor = vendors[Math.floor(Math.random() * vendors.length)];
+        // Pick a random vendor
+          const vendor = vendors[Math.floor(Math.random() * vendors.length)];
 
+          // Determine vendor type
+          const hasIncome = vendor.incomingMin && vendor.incomingMax;
+          const hasExpense = vendor.outgoingMin && vendor.outgoingMax;
+
+          let txnType: "credit" | "debit";
+          let amount: number;
+          if (hasIncome && !hasExpense) {
+            // vendor gives us money-credit
+            txnType = "credit";
+            amount = Math.floor(
+                Math.random() * (vendor.incomingMax - vendor.incomingMin + 1) + vendor.incomingMin
+            );
+          }
+          else if(hasExpense && !hasIncome) {
+            // vendor charges us - debit
+            txnType = "debit";
+            amount = Math.floor(
+                Math.random() * (vendor.outgoingMax - vendor.outgoingMin + 1) + vendor.outgoingMin
+            );
+          }
+          else {
+            // fallback: vendor incorrectly set with both or none
+            txnType = "debit";
+            amount = 0;
+          }
+          
         // Generate random date between user selected range
         function randomDateSelection(start: Date, end: Date) {
             return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
         }
 
         const txnDate = randomDateSelection(start, end);
-        // Format based on style
+
+        // push final structured transaction
         if (rules.style === 'basic') {
             transactions.push({
                 _id: new ObjectId(),
@@ -44,7 +62,7 @@ function generateTransactions(rules: GenerationRules, fromDate: string, toDate:s
                 description: vendor.name,
                 vendorId: vendor._id,
                 amount,
-                type: isCredit ? "credit" : "debit",
+                type: txnType,
             });
         }
         else if(rules.style === "detailed") {
@@ -55,10 +73,10 @@ function generateTransactions(rules: GenerationRules, fromDate: string, toDate:s
                 vendorId: vendor._id,
                 category: vendor.categoryId,
                 amount,
-                type: isCredit ? "credit" :"debit",
+                type: txnType,
                 balanceAfter:
                 5000 +
-                (isCredit ? amount: -amount),
+                (txnType === "credit" ? amount: -amount),
             });
         }
         else if(rules.style === "minimal") {
@@ -74,7 +92,7 @@ function generateTransactions(rules: GenerationRules, fromDate: string, toDate:s
 }
 // API POST Request
 export async function POST(req: Request) {
-    try {
+    try {   
         const body = await req.json();
         const rules : GenerationRules = body.rules;
 
