@@ -1,31 +1,28 @@
-
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- Add Top Header Section with logo placeholder -->
-        <title>Bank Statement</title>
-    </head>
-    <body>
-        <div class="bank-statement">
+export const sampleBankHTML = ` 
+<!DOCTYPE html>
+<html>
+<head>
+<title> Sample Bank Statement </title>
+</head>
+<body>
+<div class="bank-statement">
             <!-- Header Section -->
             <div class="statement-header">
                 <div class="header-left">
-                    <h1 class="bank-name">
+                 <h1 class="bank-name">
                         {{bankName}}
-                    </h1>
-            <p>
+            </h1>
+                <p>
                 <strong>
                 Account Holder:
                 </strong>
-                    {{companyName}}
+                    Webnatics Ltd.
             </p>
             <p>
                 <strong>
                 Account Number: 
                 </strong>
-                    {{accountNumber}}
+                    1234567890
             </p>
                 </div>
 
@@ -36,7 +33,7 @@
                         </strong>
                     </p>
                     <p>
-                        {{periodStart}} - {{periodEnd}}
+                        12/01/2025-12/07/2025
                     </p>
                 </div>
             </div>
@@ -47,19 +44,19 @@
                     <strong>
                         Transactions:
                     </strong>
-                    {{totalTransactions}}
+                    10
                 </div>
                 <div>
                     <strong>
                         Opening Balance:
                     </strong>
-                    £{{openingBalance}}
+                    60000
                 </div>
                 <div>
                     <strong>
                         Closing Balance
                     </strong>
-                    £{{closingBalance}}
+                    58700
                 </div>
             </div>
 
@@ -94,5 +91,6 @@
                 </tbody>
                 </table>
                 </div>
-    </body>
-    </html>
+</body>
+</html>
+`

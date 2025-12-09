@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Sample_Transactions } from "@/app/utils/samplePreview/sampleTransaction";
 
 // Define data structures for dynamic fetching
 interface AccountInfo {
@@ -70,12 +71,6 @@ interface Template {
                 setTemplate(null);
                }
 
-                const statementRes = await fetch(`/api/bankStatements/all?companyId=${selectedCompanyId}`);
-                if(!statementRes.ok) {
-                    throw new Error("Failed to load statement");
-                }
-               const statementData:statementData = await statementRes.json();
-               setStatementData(statementData);
             }
             catch(err) {
                 console.error("Error fetching statement:", err);
@@ -191,7 +186,7 @@ if (template.cssFile) {
                 ${txn.description}
             </td>
             <td class="${txn.debit ? 'amount-debit' : 'amount-credit'}">
-                ${txn.debit ? `-£{txn.debit}` : `+£{txn.credit}`}
+            ${txn.debit ? `-£{txn.debit}` : `+£{txn.credit}`}
             </td>
             <td class="balance">
             ${txn.balance}

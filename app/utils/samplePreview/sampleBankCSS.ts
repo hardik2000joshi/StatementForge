@@ -1,0 +1,124 @@
+export const sampleBankCSS = `
+body {
+    font-family: 'Segoe UI' Roboto, sans-serif;
+    padding: 20px;
+    background-color: #f9fafb;
+    color: #333;
+    margin: 0;
+}
+
+.bank-statement {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+    max-width: 900px;
+    margin: auto;
+}
+
+/* Header Section */
+
+.statement-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #0077b6;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+
+.bank-name {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+    color: #0077b6;
+}
+
+.header-right p {
+    margin: 0;
+    text-align: right;
+}
+
+/* Summary Section*/
+.statement-summary {
+    display: flex;
+    justify-content: space-around;
+    background-color: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+}
+/* Table Section */
+.section-title {
+    border-bottom: 2px solid #0077b6;
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    color: #1e293b;
+    padding-bottom: 4px;
+}
+
+.transactions-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.transactions-table th, 
+.transactions-table td {
+     border: 1px solid #d1d5db;
+    padding: 10px;
+    text-align: left;
+}
+
+.transactions-table th {
+    background-color: #f3f4f6;
+    font-weight: 600;
+}
+
+.transactions-table tr:hover {
+    background-color: #f9fafb;
+}
+
+/* Amount colors */
+.transactions-table td.amount-credit {
+    color: #059669;
+    text-align: right;
+    font-weight: 600;
+}
+
+.transactions-table td.amount-debit {
+    color: #dc2626;
+    text-align: right;
+    font-weight: 600;
+}
+
+.transactions-table td.balance {
+    text-align: right;
+}
+
+/* Selection ready styles */
+.transactions-table tr.selectable:hover{
+    background-color: #eef2ff;
+    cursor: pointer;
+}
+
+.transactions-table input[type="checkbox"] {
+    transform: scale(1.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .statement-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-right {
+        text-align: left;
+        margin-top: 8px;
+        }
+
+    .statement-summary {
+        flex-direction: column;
+        gap: 6px;
+        text-align: left;
+}`;

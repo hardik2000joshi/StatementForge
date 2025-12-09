@@ -164,6 +164,8 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
     htmlContent = htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
     htmlContent = htmlContent.replace(/{{closingBalance}}/g, closingBalance.toString());
     htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
+    htmlContent = htmlContent.replace(/{{mergedHtml}}/g, "");
+    htmlContent = htmlContent.replace(/{{mergedTransactions}}/g, "");
 
     // Remove leftover Handlebars placeholders
     htmlContent = htmlContent
