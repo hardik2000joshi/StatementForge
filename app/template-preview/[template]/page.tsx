@@ -3,10 +3,11 @@
 import { sampleBankCSS } from "@/app/utils/samplePreview/sampleBankCSS";
 import { sampleBankHTML } from "@/app/utils/samplePreview/sampleBankHtml";
 import { Sample_Transactions } from "@/app/utils/samplePreview/sampleTransaction";
-import { useEffect, useState } from "react";
+import React,{ useEffect, useState } from "react";
 
-export default function TemplatePreviewPage({ params }: { params: { template: string } }) {
-    const templateName = params.template;
+export default function TemplatePreviewPage({ params }: { params: Promise<{ template: string }> }) {
+    const resolvedParams = React.use(params);
+    const templateName = decodeURIComponent(resolvedParams.template);
 
     const [html, setHtml] = useState<string>("Loading...");
     const [css, setCss] = useState<string>("");

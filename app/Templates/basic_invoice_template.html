@@ -1,98 +1,100 @@
 
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <!-- Add Top Header Section with logo placeholder -->
-        <title>Bank Statement</title>
-    </head>
-    <body>
-        <div class="bank-statement">
-            <!-- Header Section -->
-            <div class="statement-header">
-                <div class="header-left">
-                    <h1 class="bank-name">
-                        {{bankName}}
-                    </h1>
-            <p>
-                <strong>
-                Account Holder:
-                </strong>
-                    {{companyName}}
-            </p>
-            <p>
-                <strong>
-                Account Number: 
-                </strong>
-                    {{accountNumber}}
-            </p>
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Add Top Header Section with logo placeholder -->
+            <title>Bank Statement</title>
+        </head>
+        <body>
+            <div class="bank-statement">
+                <!-- Header Section -->
+                <div class="statement-header">
+                    <div class="header-left">
+                        <h1 class="bank-name">
+                            {{bankName}}
+                        </h1>
+                <p>
+                    <strong>
+                    Account Holder:
+                    </strong>
+                        {{companyName}}
+                </p>
+                <p>
+                    <strong>
+                    Account Number: 
+                    </strong>
+                        {{accountNumber}}
+                </p>
+                    </div>
+
+                    <div class="header-right">
+                        <p>
+                            <strong>
+                                Statement Period:
+                            </strong>
+                        </p>
+                        <p>
+                            {{periodStart}} - {{periodEnd}}
+                        </p>
+                    </div>
                 </div>
 
-                <div class="header-right">
-                    <p>
+                <!-- Summary Section -->
+                <div class="statement-summary">
+                    <div>
                         <strong>
-                            Statement Period:
+                            Transactions:
                         </strong>
-                    </p>
-                    <p>
-                        {{periodStart}} - {{periodEnd}}
-                    </p>
+                        {{totalTransactions}}
+                    </div>
+                    <div>
+                        <strong>
+                            Opening Balance:
+                        </strong>
+                        £{{openingBalance}}
+                    </div>
+                    <div>
+                        <strong>
+                            Closing Balance
+                        </strong>
+                        £{{closingBalance}}
+                    </div>
                 </div>
-            </div>
 
-            <!-- Summary Section -->
-            <div class="statement-summary">
-                <div>
-                    <strong>
-                        Transactions:
-                    </strong>
-                    {{totalTransactions}}
-                </div>
-                <div>
-                    <strong>
-                        Opening Balance:
-                    </strong>
-                    £{{openingBalance}}
-                </div>
-                <div>
-                    <strong>
-                        Closing Balance
-                    </strong>
-                    £{{closingBalance}}
-                </div>
-            </div>
+                <!-- Transaction Table -->
+                <h2 class="section-title">
+                    Transaction Details
+                </h2>
 
-            <!-- Transaction Table -->
-            <h2 class="section-title">
-                Transaction Details
-            </h2>
+                <table class="transactions-table statement-table">
+                <thead>
+                <tr>
+                    <th>
+                    </th> <!--Checkbox column-->
+                    <th>
+                        Date
+                    </th>
+                    <th>
+                        Description
+                    </th>
+                    <th>
+                        Amount
+                    </th>
+                    <th>
+                        Balance
+                    </th>
+                    <th>
+                        Type
+                    </th>
+                </tr>
+                </thead>
 
-            <table class="transactions-table">
-            <thead>
-            <tr>
-                <th>
-                    Date
-                </th>
-                <th>
-                    Description
-                </th>
-                <th>
-                    Amount
-                </th>
-                <th>
-                    Balance
-                </th>
-                <th>
-                    Type
-                </th>
-            </tr>
-            </thead>
-
-            <tbody>
-                {{transactions}}
-                </tbody>
-                </table>
-                </div>
-    </body>
-    </html>
+                <tbody>
+                    {{transactions}}
+                    </tbody>
+                    </table>
+                    </div>
+        </body>
+        </html>

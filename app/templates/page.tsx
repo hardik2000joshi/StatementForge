@@ -86,23 +86,8 @@ export default function TemplatesPage() {
 
   //View Template — open same statement preview route
   const handleViewTemplate = async (template: Template) => {
-    try {
-      // Fetch latest generated statement for this template
-      const res = await fetch(`/api/get_latest_statement?template=${encodeURIComponent(template.name)}`);
-      const data = await res.json();
-
-      if (data.statement) {
-        const statementId = data.statement._id;
-        const companyId = data.statement.companyId || "68dba9b14c2c1f496ada4c8f"; // fallback
-        window.location.href = `/statement-preview/${statementId}?companyId=${companyId}&template=${encodeURIComponent(template.name)}`;
-      } else {
-        alert("No generated bank statement found for this template yet.");
-      }
-    } catch (err) {
-      console.error("Error fetching statement:", err);
-      alert("Error loading bank statement.");
+        window.location.href = `/template-preview/${encodeURIComponent(template.name)}`;
     }
-  };
 
   const filteredTemplates = templates.filter((t) =>
     t.name.toLowerCase().includes(search.toLowerCase())

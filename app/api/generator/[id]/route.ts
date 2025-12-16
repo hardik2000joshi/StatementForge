@@ -3,9 +3,9 @@ import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 
 // Fetch single generator stateemnt by ID
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, ctx: {params: Promise<{id: string}>}) {
     try {
-        const {id} = params;
+        const {id} = await ctx.params;
         if (!id) {
             return NextResponse.json({
                 success: false,

@@ -2,8 +2,9 @@ import clientPromise from "@/lib/db";
 import { ObjectId } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
-  const generatorId = params.id;
+export async function GET(req: NextRequest, ctx: {params: Promise<{id: string}>}) {
+  const {id} = await ctx.params;
+  const generatorId = id;
   const client = await clientPromise;
   const db = client.db("myAccountDB");
   try {
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
     const url = new URL(req.url);
     console.log("Incoming request to Bank Statements API");
     console.log("URL:", req.url);
-    console.log("Params Id:", params.id);
+    console.log("Params Id:", id);
     console.log("Company ID query:", url.searchParams.get("companyId"));
 
     const companyId = url.searchParams.get("companyId");
@@ -106,24 +107,25 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
 
     // Compute running balance per transaction
     let runningBalance = openingBalance;
-    sortedTxns= sortedTxns.map((t) => {
-      const amount = Number(t.amount) || 0;
+      sortedTxns= sortedTxns.map((t, index) => {
+        const amount = Number(t.amount) || 0;
 
-      if (t.type === "credit") {
-        runningBalance += amount;
-      }
-      
-      else {
-        runningBalance -= amount;
-      } 
+        if (t.type === "credit") {
+          runningBalance += amount;
+        }
+        
+        else {
+          runningBalance -= amount;
+        } 
 
-      return {
-        ...t,
-        amount,
-        balance: runningBalance,
-      };
-    });
-    const closingBalance = runningBalance;
+        return {
+          ...t, 
+          _id: String(t._id ?? t.id ?? index), // ensure unique per row
+          amount,
+          balance: runningBalance,
+        };
+      });
+    const closingBalance = runningBalance;sortedTxns
 
     // Build transaction rows dynamically
     const txnHtml = sortedTxns
@@ -132,6 +134,9 @@ export async function GET(req: NextRequest, {params}: {params: {id: string}}) {
           const formattedDate = new Date(t.date).toLocaleDateString("en-GB");
           return `
           <tr class="selectable">
+          <td>
+          <input type="checkbox" class="txn-checkbox"/>
+          </td>
             <td>
             ${formattedDate}
             </td>

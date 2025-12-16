@@ -51,7 +51,10 @@ export async function POST(req: Request) {
 
     const txnHtml = selectedTransactions.map((txn: any) => `
     <tr>
-    <td> 
+     <td>
+     <input type="checkbox" class="txn-checkbox" />
+     </td>
+    <td>
     ${txn.date}
     </td>
     <td>

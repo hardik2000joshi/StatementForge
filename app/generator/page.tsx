@@ -295,6 +295,39 @@
         }
     };
 
+    const handleGenerateInvoice = async() => {
+        if(selectedTransactions.length === 0) {
+            alert("Please select at least one transaction.");
+            return;
+        }
+        try {
+            const response = await fetch("/api/generator/createInvoiceUsingTransactionSelection", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    transactions: selectedTransactions,
+                    companyId: companies,
+                    startDate,
+                    endDate
+                })
+            }); 
+            const data = await response.json();
+            if(!data.success) {
+                alert("Error:" +data.message);
+                return;
+            }
+
+            // Redirect user to geneerated invoice preview
+            window.location.href = `/invoice/{$data.invoiceId}`;
+        }
+        catch(err) {
+            console.error("Invoice Generation Error:", err);
+            alert("Something went wrong");
+        }
+    };
+
         return (
             <div className="p-6 space-y-6">
                 <div className="rounded-2xl border bg-gray-50 p-6 shadow-sm">
@@ -738,6 +771,25 @@
                                                 </label>
                                             ))}
                                         </div>
+
+                                        {/* Selected count of transactions */}
+                                        {selectedTransactions.length>0 && (
+                                            <div className="mt-3 text-sm font-medium text-gray-700">
+                                                Selected Transactions:{selectedTransactions.length}
+                                            </div>
+                                        )}
+
+                                        {/* Generate Invoice Button */}
+                                        {selectedTransactions.length>0 && (
+                                            <div className="mt-4 flex justify-end">
+                                                <button
+                                                onClick={handleGenerateInvoice}
+                                                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center gap-2 shadow"
+                                                >
+                                                    Generate Invoice
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                     </div>

@@ -135,6 +135,9 @@
             const txnHtml = sortedTxns.map((t) => `
                 <tr>
                 <td>
+                <input type="checkbox" class="txn-checkbox"/>
+                </td>
+                <td>
                  ${new Date(t.date).toLocaleDateString("en-GB")}
                  </td>
                  <td>
@@ -164,7 +167,7 @@
                 htmlContent = htmlContent.replace(/{{totalTransactions}}/g, totalTransactions.toString());
                 htmlContent =htmlContent.replace(/{{openingBalance}}/g, openingBalance.toString());
                 htmlContent = htmlContent.replace(/{{closingBalance}}/g, balance.toString());
-                htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
+            htmlContent = htmlContent.replace(/{{transactions}}/g, txnHtml);
 
                  if (template.cssFile) htmlContent = htmlContent.replace('</head>', `<style>${template.cssFile}</style></head>`);
                  

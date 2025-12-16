@@ -179,6 +179,9 @@ if (template.cssFile) {
     // Replace transactions placeholder
     const txnHTML = statementData.transactions.map(txn => `
         <tr>
+         <td>
+                <input type="checkbox" class="txn-checkbox" data-id="${txn.id}" />
+                </td>
             <td>
                 ${txn.date}
             </td>
@@ -321,20 +324,18 @@ if (template.cssFile) {
                             </tr>
                         </thead>
 
-                        <tbody>
-                            {
-                                (transactions).map((txn: Transaction) => (
-                                    <tr key={txn.id} className="hover:bg-gray-50">
-                                        <td className="border px-4 py-2 text-center">
-                                            {/* Checkbox for selection */}
-                                            <input 
-                                            type="checkbox"
-                                            checked={selectedIds.includes(txn.id)} 
-                                            onChange={(e) => handleSelect(txn.id, e.target.checked)}
-                                            // Disable selection for non-transactional Opening balance
-                                            disabled = {txn.description === "OpeningBalance"}
-                                            />  
-                                        </td>
+                            <tbody>
+                                {
+                                    (transactions).map((txn: Transaction) => (
+                                        <tr key={txn.id} className="hover:bg-gray-50">
+                                            <td className="border px-4 py-2 text-center">
+                                                {/* Checkbox for selection */}
+                                                <input 
+                                                type="checkbox"
+                                                checked={selectedIds.includes(txn.id)} 
+                                                onChange={(e) => handleSelect(txn.id, e.target.checked)}
+                                                />  
+                                            </td>
 
                                         <td className="border px-4 py-2">
                                             {txn.date}
