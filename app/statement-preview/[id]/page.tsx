@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 interface Template {
@@ -28,9 +28,10 @@ export default function StatementPreviewPage({
   const [transactions, setTransactions] = useState<any[]>([]);
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
-  
+
   const searchParams = useSearchParams();
   const templateName = searchParams.get("template") || "Bank Statement";
+  const router = useRouter();
 
   // FETCH BANK STATEMENT HTML
 
@@ -192,9 +193,8 @@ useEffect(() => {
         throw new Error(
           json?.message || json?.error || "Invoice generator failed"
         );
-
-      alert(`Invoice(s) generated successfully`);
       setSelectedTransactions([]);
+      router.push("/invoices");
     } catch (err: any) {
       alert(err?.message || "Failed to generate invoice");
     } finally {

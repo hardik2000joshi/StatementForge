@@ -130,27 +130,27 @@ export async function GET(req: NextRequest, ctx: {params: Promise<{id: string}>}
     // Build transaction rows dynamically
     const txnHtml = sortedTxns
       .map(
-        (t) => {
-          const formattedDate = new Date(t.date).toLocaleDateString("en-GB");
+        (txn) => {
+          const formattedDate = new Date(txn.date).toLocaleDateString("en-GB");
           return `
           <tr class="selectable">
           <td>
-          <input type="checkbox" class="txn-checkbox"/>
+          <input type="checkbox" class="txn-checkbox" data-id="${txn.id}"/>
           </td>
             <td>
             ${formattedDate}
             </td>
             <td>
-            ${t.description || "-"}
+            ${txn.description || "-"}
             </td>
-            <td class="${t.type==="credit" ? "amount-credit" : "amount-debit"}">
-            ${t.type === "credit" ? "+" : "-"} £${t.amount}
+            <td class="${txn.type==="credit" ? "amount-credit" : "amount-debit"}">
+            ${txn.type === "credit" ? "+" : "-"} £${txn.amount}
             </td>
             <td class="balance">
-            £${t.balance}
+            £${txn.balance}
             </td>
              <td>
-             ${t.type === "credit" ? "Income" : "Expense"}
+             ${txn.type === "credit" ? "Income" : "Expense"}
              </td>
           </tr>
         `;
