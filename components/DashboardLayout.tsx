@@ -69,7 +69,7 @@
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                  active
+                  pathname === item.href
                   ? "bg-blue-50 text-blue-600"
                   : "text-gray-600 hover:bg-gray-100 text-gray-900"
                 }`}
