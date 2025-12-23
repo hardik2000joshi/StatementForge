@@ -7,60 +7,64 @@ declare module "jspdf" {
         };
     }
 }
-import { AlignCenter, Download, Eye, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {Download, Eye, Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Button from "@/components/ui/Button";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export default function InvoicesPage() {
-    const [invoices, setInvoices] = useState([
-        {
-            id: "INV-2025-319611",
-            title: "Electricity Bill",
-            date: "1/1/2024",
-            created:  "9/9/2025",
-            amount: "-£5.46",
-        },
-        {
-            id: "INV-2025-062916",
-            title: "Electricity Bill",
-            date: "1/1/2024",
-            created: "9/3/2025",
-            amount: "-£0.84",
-        },
-        {
-            id: "INV-2025-200181",
-            title: "Electricity Bill",
-            date: "1/3/2024",
-            created: "8/18/2025",
-            amount: "-£5.49",
-        },
-        {
-            id: "INV-2025-343296",
-            title: "Electricity Bill",
-            date: "1/1/2024",
-            created: "8/14/2025",
-            amount: "-£2.32",
-        },
-    ]);
+type Invoice = {
+    id: string;
+    title: string;
+    date: string;
+    created: string;
+    amount: number;
+    transactions: any[];
+};
 
+export default function InvoicesPage() {
+    const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [showConfirm, setShowConfirm] = useState(false);
 
+    // Load real invoices from API
+    useEffect(() => {
+        const load = async() => {
+            setLoading(true);
+            try {
+                const response = await fetch("/api/invoices");
+                const json = await response.json();
+                if(json.success) {
+                    setInvoices(json.data);
+                }
+                else {
+                    console.error(json.message || "Failed to load invoices");
+                }
+            }
+            catch(error) {
+                console.error("Invoice load error", error);
+            }
+            finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+    
     const handleClearAll = () => {
         setInvoices([]);
         setShowConfirm(false);
     };
 
     const filteredInvoices = invoices.filter(
-        invoice => 
+        (invoice) => 
             invoice.id.toLowerCase().includes(search.toLowerCase()) || 
         invoice.title.toLowerCase().includes(search.toLowerCase())
     );
 
-    // Generate and download PDF
-    const downloadInvoice = (invoice: typeof invoices[0]) => {
+    // Generate and download PDF from real transactions
+    const buildPdf = (invoice: Invoice) => {
         const doc = new jsPDF();
 
         // Title
@@ -71,15 +75,21 @@ export default function InvoicesPage() {
         doc.text(`Invoice ID: ${invoice.id}`, 20, 40);
         doc.text(`Title: ${invoice.title}`, 20, 50);
         doc.text(`Date: ${invoice.date}`, 20, 60);
-        doc.text(`Created: ${invoice.created}`, 20, 70);
+        doc.text(`Created: ${new Date(invoice.created).toLocaleDateString("en-GB")}`,
+         20, 70
+        );
+
+        const body = invoice.transactions.map((t, idx) => [
+            String(idx+1),
+            t.description || "",
+            String(t.amount ?? t.credit ?? t.debit ?? 0),
+        ]);
 
         // Table Section 
         autoTable(doc, {
             startY: 90,
             head: [["Item", "Description", "Amount"]],
-            body: [
-                ["1", invoice.title, invoice.amount],
-            ],
+            body,
             theme: "grid",
             styles: {halign: "center"},
             headStyles: {fillColor: [22, 160, 133]},
@@ -88,34 +98,22 @@ export default function InvoicesPage() {
 
         const finalY = (doc as any).lastAutoTable?.finalY || 90;
         // Footer / Total
-        
-        doc.text(`Total: ${invoice.amount}`, 160, doc.lastAutoTable.finalY + 20);
+        doc.text(`Total: ${invoice.amount}`, 
+            160, 
+            finalY + 20,
+            {align: "right"}
+        );
 
+        return doc;
+    };
+
+    const downloadInvoice = (invoice:Invoice) => {
+        const doc = buildPdf(invoice);
         doc.save(`${invoice.id}.pdf`);
     };
 
-    const previewInvoice = (invoice: typeof invoices[0]) => {
-        const doc = new jsPDF();
-
-        doc.setFontSize(18);
-        doc.text("Invoice", 105, 20, {align: "center"});
-
-        doc.setFontSize(12);
-        doc.text(`Invoice ID: ${invoice.id}`, 20, 40);
-        doc.text(`Title: ${invoice.title}`, 20, 50);
-        doc.text(`Date: ${invoice.date}`, 20, 60);
-        doc.text(`Created: ${invoice.created}`, 20, 70);
-
-        autoTable(doc, {
-            startY: 90,
-            head: [["Item", "Description", "Amount"]],
-            body: [["1", invoice.title, invoice.amount]],
-            theme: "grid",
-            styles: {halign: "center"},
-            headStyles: {fillColor: [22, 160, 133]},
-        });
-
-        // open in new tab
+    const previewInvoice = (invoice: Invoice) => {
+        const doc = buildPdf(invoice);
         window.open(doc.output("bloburl"), "_blank");
         };
 
@@ -161,6 +159,14 @@ export default function InvoicesPage() {
                     Latest invoices generated from statement transactions
                 </p>
 
+                {loading? (
+                    <p className="text-sm text-gray-500">
+                        Loading Invoices...
+                    </p>
+                ): (
+
+                
+
                 <div className="space-y-3">
                     {filteredInvoices.length > 0 ? (
                         filteredInvoices.map((invoice) => (
@@ -178,7 +184,8 @@ export default function InvoicesPage() {
                                     {invoice.title}
                                 </p>
                                 <p className="text-xs text-gray-400">
-                                    Date: {invoice.date} &nbsp; Created: {invoice.created}
+                                    Date: {invoice.date} &nbsp; Created: {""}
+                                    {new Date(invoice.created).toLocaleDateString("en-GB")}
                                 </p>
                             </div>
 
@@ -189,7 +196,7 @@ export default function InvoicesPage() {
                                 </p>
                                 <button 
                                 onClick={() => previewInvoice(invoice)}
-                                className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-1000">
+                                className="flex items-center gap-1 text-sm border rounded-full px-3 py-1 hover:bg-gray-100">
                                     <Eye className="w-4 h-4" /> 
                                     Preview
                                 </button>                                
@@ -208,6 +215,7 @@ export default function InvoicesPage() {
                         </p>
                 )}
                 </div>
+                )}
             </div>
 
             {showConfirm && (

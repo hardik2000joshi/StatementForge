@@ -1,6 +1,5 @@
 import clientPromise from "@/lib/db";
 import { NextResponse } from "next/server";
-import { ObjectId } from "mongodb";
 
 export async function POST(req: Request) {
     try {
@@ -16,13 +15,30 @@ export async function POST(req: Request) {
         const client = await clientPromise;
         const db = client.db("myAccountDB");
 
-        const transactions = await db.collection("bankStatements")
-        .find({
-            _id: {
-                $in: transactionIds.map((
-            id: string) => new ObjectId(id)
-        )}})
-        .toArray(); 
+        const statement = await db.collection("bankStatements")
+        .findOne({
+            companyId,
+            "accountInfo.periodStart": periodStart,
+            "accountInfo.periodEnd": periodEnd,
+            });
+
+            if (!statement) {
+                return NextResponse.json({
+                    success: false,
+                    message: "Statement not found"
+                });
+            }
+
+            const allTxns = statement.transactions || [];
+
+            // filter by ids you stored in the statement
+            const selectedTransactions = allTxns.filter((t:any) =>
+                transactionIds.includes(String(t.id ?? t._id))
+            );
+
+            const totalAmount = selectedTransactions.reduce(
+                (sum: number, t:any) => sum + Number(t.amount || t.credit || -t.debit || 0), 0
+            );
 
         // create new invoice entry
         const invoice = {
@@ -30,9 +46,10 @@ export async function POST(req: Request) {
             createdAt: new Date(),
             periodStart,
             periodEnd,
-            transactions,
-            totalAmount: transactions.reduce((sum, t) => sum + t.amount, 0)
+            transactions: selectedTransactions,
+            totalAmount,
         };
+
         const result = await db.collection("invoices").insertOne(invoice);
 
         return NextResponse.json({

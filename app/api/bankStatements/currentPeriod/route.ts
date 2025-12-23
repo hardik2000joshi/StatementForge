@@ -135,7 +135,7 @@
             const txnHtml = sortedTxns.map((t) => `
                 <tr>
                 <td>
-                <input type="checkbox" class="txn-checkbox" data-id="${t.id}"/>
+                <input type="checkbox" class="txn-checkbox" data-id="${t._id}"/>
                 </td>
                 <td>
                  ${new Date(t.date).toLocaleDateString("en-GB")}

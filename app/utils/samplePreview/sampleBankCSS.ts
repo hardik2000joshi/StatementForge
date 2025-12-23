@@ -96,13 +96,20 @@ body {
 }
 
 /* Selection ready styles */
+.transactions-table tr.selected-row {
+  background-color: #eef2ff;   /* light indigo */
+}
+
 .transactions-table tr.selectable:hover{
     background-color: #eef2ff;
     cursor: pointer;
 }
 
 .transactions-table input[type="checkbox"] {
-    transform: scale(1.2);
+ transform: scale(1.3);
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
 }
 
 /* Responsive */

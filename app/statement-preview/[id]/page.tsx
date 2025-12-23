@@ -29,6 +29,9 @@ export default function StatementPreviewPage({
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
 
+  const [periodStart, setPeriodStart] = useState<string | null>(null);
+  const [periodEnd, setPeriodEnd] = useState<string | null>(null);
+
   const searchParams = useSearchParams();
   const templateName = searchParams.get("template") || "Bank Statement";
   const router = useRouter();
@@ -45,7 +48,10 @@ export default function StatementPreviewPage({
         const companyId = new URLSearchParams(window.location.search).get(
           "companyId"
         );
-        if (!companyId) throw new Error("Missing companyId in URL");
+        if (!companyId) {
+          alert("Missing companyId");
+          return;
+        }
 
         const genRes = await fetch(`/api/generator/${generatorId}`);
         const genJson = await genRes.json();
@@ -57,19 +63,22 @@ export default function StatementPreviewPage({
 
         const genData =
           genJson.data?.statement ?? genJson.data ?? genJson ?? {};
-        const periodStart = genData?.periodStart;
-        const periodEnd = genData?.periodEnd;
+        const ps = genData?.periodStart;
+        const pe = genData?.periodEnd;
 
-        if (!periodStart || !periodEnd)
+        if (!ps || !pe)
           throw new Error("Generator missing periodStart/periodEnd");
+
+        setPeriodStart(ps);
+        setPeriodEnd(pe);
 
         const bankUrl = `/api/bankStatements/${encodeURIComponent(
           generatorId
         )}?companyId=${encodeURIComponent(
           companyId
         )}&periodStart=${encodeURIComponent(
-          periodStart
-        )}&periodEnd=${encodeURIComponent(periodEnd)}`;
+          ps
+        )}&periodEnd=${encodeURIComponent(pe)}`;
 
         const bankRes = await fetch(bankUrl);
         const bankJson = await bankRes.json();
@@ -98,6 +107,8 @@ export default function StatementPreviewPage({
           ? bankJson.transactions
           : [];
 
+          console.log("serverTxns[0] =", serverTxns[0]);
+
         const normalized = serverTxns.map((t: any) => ({
           ...t,
           _id: String(t._id),
@@ -116,12 +127,14 @@ export default function StatementPreviewPage({
       }
     };
 
-    fetchPreview();
+    fetchPreview();   
   }, [generatorId]);
+
+  
 
   // Single effect: listen to clicks and update selectedTransactions BY ID
 useEffect(() => {
-  if (!renderHtml || transactions.length === 0) return;
+  if (!renderHtml) return;
 
   const timer = setTimeout(() => {
     const table =
@@ -135,35 +148,53 @@ useEffect(() => {
       return;
     }
 
-    const handleChange = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
+     const allInputs = table.querySelectorAll<HTMLInputElement>(
+      "input.txn-checkbox[type='checkbox']"
+    );
+    allInputs.forEach((i) => {
+      console.log("initial checkbox state:", i.checked, i.dataset.id);
+    });
 
-      const input = target.closest("input.txn-checkbox") as
-        | HTMLInputElement
-        | null;
-      if (!input) return;
-
-      // *** KEY CHANGE: use data-id like BankStatementTemplate.tsx ***
+  const syncFromDom = () => {
+    const inputs = document.querySelectorAll<HTMLInputElement>(
+      "table.transactions-table.statement-table input.txn-checkbox[type='checkbox']"
+    );
+    const selected: string[] = [];
+    inputs.forEach((input) => {
       const id = input.getAttribute("data-id");
-      if (!id) return;
+    const row = input.closest("tr");
+    if (row) row.classList.toggle("selected-row", input.checked);
+      if (input.checked && id) {
+        selected.push(id);
+      }
+    });
+    console.log("syncFromDom selected =", selected);
+    setSelectedTransactions(selected);
+  };
 
-      setSelectedTransactions((prev) =>
-        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-      );
-    };
+  allInputs.forEach((input) => {
+      input.checked = false;
+    });
+  syncFromDom();
 
-    table.addEventListener("click", handleChange, true);
+  const handleChange = (e: Event) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.classList.contains("txn-checkbox")) return;
+    console.log("handleChange target =", target, "checked =", target.checked);
+    syncFromDom();
+  };
 
-    // cleanup
-    return () => {
-      table.removeEventListener("click", handleChange, true);
-    };
-  }, 0);
+  document.addEventListener("change", handleChange); // capture
 
-  return () => clearTimeout(timer);
-}, [renderHtml, transactions]);
+  return () => {
+    document.removeEventListener("change", handleChange);
+  };
+}, 0);
 
+return () => clearTimeout(timer);
+}, [renderHtml]);
 
 
   // GENERATE INVOICE
@@ -176,23 +207,39 @@ useEffect(() => {
     try {
       setGeneratingInvoice(true);
 
+      const companyId = new URLSearchParams(window.location.search).get(
+        "companyId"
+      );
+
+      if(!companyId) {
+        alert("Missing companyId");
+        return;
+      }
+
+      if(!periodStart || !periodEnd) {
+        alert("statement period not ready");
+      }
+
       const payload = {
         transactionIds: selectedTransactions,
-        generatorId,
-        templateName,
+        companyId,
+        periodStart,
+        periodEnd,
       };
 
-      const response = await fetch("/api/invoices/generate", {
+      const response = await fetch("/api/generator/createInvoiceUsingTransactionSelection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const json = await response.json();
-      if (!response.ok)
+      if (!response.ok || !json.message) {
         throw new Error(
-          json?.message || json?.error || "Invoice generator failed"
+          json?.message || "Invoice generator failed"
         );
+      }
+      
       setSelectedTransactions([]);
       router.push("/invoices");
     } catch (err: any) {
@@ -222,6 +269,9 @@ useEffect(() => {
         Statement or Template not found
       </div>
     );
+
+    console.log("render selectedTransactions =", selectedTransactions);
+
 
   // -------------------------
   // FINAL UI (Correct Layout)

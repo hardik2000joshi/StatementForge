@@ -135,7 +135,7 @@ export async function GET(req: NextRequest, ctx: {params: Promise<{id: string}>}
           return `
           <tr class="selectable">
           <td>
-          <input type="checkbox" class="txn-checkbox" data-id="${txn.id}"/>
+          <input type="checkbox" class="txn-checkbox" data-id="${txn._id}"/>
           </td>
             <td>
             ${formattedDate}
