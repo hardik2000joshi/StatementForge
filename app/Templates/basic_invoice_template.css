@@ -107,9 +107,17 @@ body {
 }
 
 .transactions-table input[type="checkbox"] {
+    -webkit-appearance: checkbox;
+    appearance: checkbox;
     transform: scale(1.3);
     width: 16px;
     height: 16px;
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    opacity: 1;
+    pointer-events: auto;
+    transform: scale(1.3);
     accent-color: #2563eb;
     /* modern browsers: blue tick */
 }

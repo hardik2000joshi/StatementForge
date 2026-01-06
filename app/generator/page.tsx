@@ -694,47 +694,7 @@
                         ))}
                     </select>
                     </div>
-
-                    {/* Vendor Category Selector */}
-                    <div>
-                    <label className="block mb-1 font-medium">
-                    Vendor Category
-                    </label>
-                    <select value={selectedVendorCategoryId}
-                    onChange={(e) => setSelectedVendorCategoryId(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                    >
-                    {vendorCategories.map((cat) => (
-                    <option 
-                    key={cat._id}
-                    value={cat._id}
-                    >
-                    {cat.name} ({cat.type})
-                    </option>
-                    ))}
-                    </select>
-                    </div>
-
-                    {/* Vendor Selector */}
-                    <div>
-                    <label className="block mb-1 font-medium">
-                    Vendors
-                    </label>
-                    <select
-                    value={selectedVendorId}
-                    onChange={(e) => setSelectedVendorId(e.target.value)}
-                    className="w-full border rounded-lg px-3 py-2"
-                    >
-                    {vendors.
-                    filter(v => v.categoryId === selectedVendorCategoryId)
-                    .map((vendor) => (
-                        <option key={vendor._id} value={vendor._id}>
-                            {vendor.name}
-                        </option>
-                    ))}
-                    </select>
-                    </div>
-
+                    
                     {/* Generate Button */}
                     <Button  
                     onClick={handleGenerateStatement}

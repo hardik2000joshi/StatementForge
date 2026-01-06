@@ -347,10 +347,6 @@ export default function CompaniesPage() {
                                         Mobile Top-ups
                                     </option>
 
-                                    <option value="polytech">
-                                        Polytechnics
-                                    </option>
-
                                 </select>
                             </div>
 

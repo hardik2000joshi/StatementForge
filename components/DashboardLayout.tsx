@@ -18,16 +18,16 @@
     ];
 
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-slate-50">
         {/* header */}  
-        <header className="flex items-center justify-between bg-white px-6 h-14 border-b shadow-sm">
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+        <header className="flex flex-wrap items-center justify-between bg-white px-4 sm:px-6 h-auto sm:h-14 border-b shadow-sm gap-3">
+          <h1 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
 
             <File className="h-5 w-5 text-blue-600"/>
             Finhelper
             </h1> 
 
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <Link href="/settings" 
               className="p-2 rounded-full hover:bg-gray-100"
               >
@@ -42,14 +42,14 @@
 
               <Link
               href="/sign-up"
-              className="p-2 rounded-full hover:bg-gray-100"
+              className="px-2 py-1 text-sm rounded-full hover:bg-gray-100"
               >
                 Sign Up
               </Link>
 
               <Link
               href="/login"
-              className="p-2 rounded-full hover:bg-gray-100"
+              className="px-2 py-1 text-sm rounded-full hover:bg-gray-100"
               >
                 Login
               </Link>
@@ -59,7 +59,7 @@
 
         {/* Horizontal Nav*/}
           <nav className="bg-white border-b shadow-sm">
-            <div className="flex gap-6 px-6 h-12 items-center text-sm font-medium">
+            <div className="flex gap-2 sm:gap-4 px-2 sm:px-6 h-12 items-center text-xs sm:text-sm font-medium overflow-x-auto">
               {navItems.map((item)=> {
                 const Icon = item.icon;
                 const active = pathname.startsWith(item.href);
@@ -68,7 +68,7 @@
                 <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                className={`flex flex-shrink-0 items-center gap-1 sm:gap-2 px-3 py-1.5 rounded-lg transition-colors ${
                   pathname === item.href
                   ? "bg-blue-50 text-blue-600"
                   : "text-gray-600 hover:bg-gray-100 text-gray-900"
@@ -82,11 +82,16 @@
               </div>
             </nav>
 
-        <main className="flex-1 bg-gray-100 p-8">{children}</main>
+        <main className="flex-1 bg-gray-100 px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-6xl mx-auto">
+              {children}
+          </div>
+          </main>
+
 
         {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 text-gray-700 px-6 py-8 text-sm">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+        <footer className="bg-white border-t border-gray-200 text-gray-700 px-4 sm:px-6 py-6 sm:py-8 text-sm">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
 
             {/* About Us */}
             <div className="md:pr-6">
@@ -100,7 +105,7 @@
             </div>
 
             {/* Useful Links */}
-            <div className="md:px-6">
+            <div className="md:px-6 mt-4 md:mt-0">
               <h3 className="text-base font-semibold text-gray-900 mb-2">
                 Useful Links
               </h3>
@@ -144,7 +149,7 @@
             </div>
 
             {/* Contact Info */}
-            <div className="md:pl-6">
+            <div className="md:pl-6 mt-4 md:mt-0">
               <h3 className="text-base font-semibold text-gray-900 mb-2">
                 Contact Information
                 </h3>
@@ -183,7 +188,7 @@
             </div>
 
             {/* Footer Bottom Centered */}
-            <div className="mt-8 text-center text-xs text--400">
+            <div className="mt-6 sm:mt-8 text-center text-xs text-gray-400">
               &copy; {new Date().getFullYear()}  <strong>
                 FINHELPER              
                 </strong> . 

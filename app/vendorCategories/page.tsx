@@ -3,6 +3,7 @@ import Button from "@/components/ui/Button";
 import {Card, CardContent} from "@/components/ui/card";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 /* vendor categories frontend page:
 fetches categories from app/api/vendorCategories/route.ts
@@ -64,6 +65,9 @@ export default function VendorCategoriesPage() {
         incomingMax: "",
         weekendActivity: "",
     });
+
+    const searchParams = useSearchParams();
+  const industryId = searchParams.get("industryId"); // string | null
 
     // fetch categories
     async function fetchCategories() {
@@ -140,13 +144,22 @@ export default function VendorCategoriesPage() {
         if(!catForm.name.trim()) {
             return alert("Category Name is Required");
         }
+        if(!industryId) {
+            return alert("Missing industryId (open this page from an industry).");
+        }
+
         try {
+            const payload = {
+                ...catForm,
+                industryId,
+            };
+
             const response = await fetch("/api/vendorCategories", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify(catForm),
+                body: JSON.stringify(payload),
             });
             const json = await response.json();
             if(!response.ok) {
