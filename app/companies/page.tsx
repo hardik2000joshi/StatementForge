@@ -20,6 +20,7 @@ interface Company {
     companyName: string;
     registrationNumber: string;
     industryType: string;
+    industryId?: string;
     vatNumber: string;
     streetAddress: string;
     city: string;
@@ -192,6 +193,7 @@ export default function CompaniesPage() {
     setCompanyName(company.companyName);
     setRegistrationNumber(company.registrationNumber);
     setIndustryType(company.industryType);
+    setSelectedIndustryId(company.industryType || "");
     setVatNumber(company.vatNumber);
     setStreetAddress(company.streetAddress);
     setCity(company.city);
@@ -207,10 +209,18 @@ export default function CompaniesPage() {
   };
 
   const handleSave = () => {
+    if (!selectedIndustryId) {
+        alert("Please select an industry type");
+        return;
+    }
+
+    const selectedIndustry = industries.find(ind => ind.id === selectedIndustryId);
+
     const companyData: Company = {
       companyName,
       registrationNumber,
-      industryType,
+      industryType: selectedIndustry?.name || "",
+      industryId: selectedIndustryId,
       vatNumber,
       streetAddress,
       city,
@@ -225,6 +235,7 @@ export default function CompaniesPage() {
     };
 
     if (editingCompanyId) {
+        console.log("Updating company id:", editingCompanyId);
         updateCompany(editingCompanyId, companyData);
     }
     else {
@@ -379,7 +390,13 @@ export default function CompaniesPage() {
 
                                 <select
                                     value={selectedIndustryId}
-                                    onChange={(e) => setSelectedIndustryId(e.target.value)}
+                                    onChange={(e) => {
+                                        const id = e.target.value;
+                                        setSelectedIndustryId(id);
+
+                                        const industry = industries.find((ind) => ind.id === id);
+                                        setIndustryType(industry?.name || "");
+                                    }}
                                     className="border p-2 rounded-lg w-full"
                                 >
                                     <option value="">

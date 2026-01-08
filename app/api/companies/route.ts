@@ -11,9 +11,13 @@ export async function GET() {
         const db = client.db("myAccountDB");
         const companies = await db.collection("companies").find().toArray();
 
+         const data = companies.map((c: any) => ({
+      id: c._id.toString(),
+      ...c,
+    }));
         return NextResponse.json({
             success: true,
-            data: companies,
+            data
         });
     }
     catch (error) {
@@ -102,7 +106,7 @@ export async function PUT(req: Request) {
         if (body.industryId !== undefined && !String(body.industryId).trim()) {
             return NextResponse.json({
                 success: false,
-                error: "Industry name cannot be empty"
+                error: "Industry type cannot be empty"
             }, {
                 status: 400
             });
@@ -117,15 +121,17 @@ export async function PUT(req: Request) {
             {
                 $set: {
                     ...body,
-                    updatedAt: new Date(),
-            }, // only update required field
+                    updatedAt: new Date()
+            } // only update required field
         },
             {
                 returnDocument: "after"
-            }, // return updated doc
+            } // return updated doc
         );
 
-        if (!result || !result.value) {
+          console.log("PUT result:", result);
+
+        if (!result) {
             return NextResponse.json( {
                  success: false,
                 error: "Company not found"
@@ -137,7 +143,7 @@ export async function PUT(req: Request) {
         }
         return NextResponse.json({
             success: true,
-            data: result.value,
+            data: result,
         });
     }
     catch(error) {
