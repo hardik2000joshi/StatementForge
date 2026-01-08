@@ -1,8 +1,14 @@
 "use client";
 
-import { Edit, Plus, Trash, X } from "lucide-react";
+import { Edit, FlagTriangleLeft, Plus, Trash, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import countryList from "react-select-country-list";
+
+type Industry = {
+    id: string;
+    name: string;
+    description?: string;
+};
 
 interface CountryOption {
     value: string;
@@ -61,6 +67,38 @@ export default function CompaniesPage() {
         setShowToast(true);
     };
 
+    const [industries, setIndustries] = useState<Industry[]>([]);
+    const [loadingIndustries, setLoadingIndustries] = useState(true);
+    const [selectedIndustryId, setSelectedIndustryId] = useState<string>("");
+
+    /* useEffect easy syntax:  UseEffect(() => {
+    // Used for side effect logic
+    }, [dependencies])*/
+
+    useEffect(() => {
+        // contains side effect logic
+        const fetchIndustries = async() => {
+            try {
+                setLoadingIndustries(true);
+                const response = await fetch("/api/industries");
+                const json = await response.json();
+                if (!response.ok || !json.success) {   // if response failed or json response not succeed/also failed- then failed to load industries
+                    console.error("Failed to load industries", json); // show json error then
+                    return;
+                }
+                setIndustries(json.data || []);
+            }
+            catch(error) {
+                console.error("Error to fetch industries", error); 
+            }
+            finally {
+                setLoadingIndustries(false);
+            }
+        };
+
+        fetchIndustries();
+    }, []);
+ 
     const updateCompany = async(id: string, company: Company) => {
         const res = await fetch(`/api/companies?id=${id}`, {
             method: "PUT",
@@ -340,13 +378,28 @@ export default function CompaniesPage() {
                                 </label>
 
                                 <select
-                                    defaultValue=""
+                                    value={selectedIndustryId}
+                                    onChange={(e) => setSelectedIndustryId(e.target.value)}
                                     className="border p-2 rounded-lg w-full"
                                 >
-                                    <option value="mobile">
-                                        Mobile Top-ups
+                                    <option value="">
+                                        Select an industry
                                     </option>
 
+                                    {loadingIndustries ? (
+                                        <option disabled>
+                                            Loading...
+                                        </option>
+                                    ): (
+                                        industries.map((industry) => (
+                                            <option
+                                            key={industry.id} 
+                                            value={industry.id}
+                                            >
+                                                {industry.name}
+                                            </option>
+                                        ))
+                                    )}
                                 </select>
                             </div>
 

@@ -1,6 +1,7 @@
 import clientPromise from "@/lib/db";
 import { NextResponse } from "next/server";
 import {ObjectId} from "mongodb";
+import { error } from "console";
 
 
 // Get All Companies
@@ -30,10 +31,25 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+
+        const name = String(body.name || "").trim();
+        const industryId = String(body.industryId || "").trim();
+
+        if (!name) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: "Industry type is required"
+                },{
+                    status: 400
+                });
+        }
+
         const client = await clientPromise;
         const db = client.db("myAccountDB");
         const result = await db.collection("companies").insertOne({
             ...body,
+            industryId,
             createdAt: new Date(),
         });
         return NextResponse.json(
@@ -72,6 +88,26 @@ export async function PUT(req: Request) {
         }
 
         const body = await req.json();
+
+        // Optional: basic validation
+        if (body.name !== undefined && !String(body.name).trim()){
+            return NextResponse.json({
+                success: false,
+                error: "Company name cannot be empty"
+            }, {
+                status: 400
+            });
+        }
+
+        if (body.industryId !== undefined && !String(body.industryId).trim()) {
+            return NextResponse.json({
+                success: false,
+                error: "Industry name cannot be empty"
+            }, {
+                status: 400
+            });
+        }
+
         const client = await clientPromise;
         const db = client.db("myAccountDB");
         const result = await db.collection("companies").findOneAndUpdate(
@@ -79,14 +115,17 @@ export async function PUT(req: Request) {
                 _id: new ObjectId(id)
             },
             {
-                $set: body
+                $set: {
+                    ...body,
+                    updatedAt: new Date(),
             }, // only update required field
+        },
             {
                 returnDocument: "after"
             }, // return updated doc
         );
 
-        if (!result ||result.value) {
+        if (!result || !result.value) {
             return NextResponse.json( {
                  success: false,
                 error: "Company not found"
