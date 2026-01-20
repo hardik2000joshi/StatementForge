@@ -1,5 +1,6 @@
     "use client";
     import Button from "@/components/ui/Button";
+    import { useRouter } from "next/navigation";
     import { Download, DownloadIcon, Eye, Save, Trash2, X } from "lucide-react";
     import { useEffect, useState } from "react";
     import { toast } from "sonner";
@@ -34,6 +35,7 @@
         const [showLoadModal, setShowLoadModal] = useState(false);
         const [templates, setTemplates] = useState<any[]>([]);
         const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+        const router = useRouter();
 
         // form state
         const [presetName, setPresetName] = useState("");
@@ -204,10 +206,27 @@
             }
             
             const {statement, id} = json.data;
+
+            const response = await fetch("/api/bankStatements", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    companyId: selectedCompanyId,
+                    companyName: companies.find(c => c._id === selectedCompanyId)?.companyName,
+                    generatorId: id,
+                    transactionCount: statement.transactions.length,
+                    periodStart: startDate,
+                    periodEnd: endDate,
+                    createdAt: new Date().toISOString()
+                })
+            });
+
             toast.success(`Statement Generated! ${statement.transactions.length} transactions created.`);
 
             // Redirect
-            window.location.href = `/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`;
+             router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
                    const txndata = await txnRes.json();
             if (!txndata.success) 
                 throw new Error("Failed to generate transactions"); 
@@ -268,15 +287,35 @@
             // Add to recent generations list
             setRecentGenerations((prev) => [
                 {
-                    id: txndata.id,
-                    transactions: txndata.statement.transactions.length,
-                    date: new Date(txndata.statement.createdAt).toLocaleString(),
+                    id: id,
+                    transactions: statement.transactions.length,
+                    date: new Date().toLocaleString(),
                 },
-                ...prev,
+                ...prev.slice(0, 4), // keep only 5 from Oth index to 4th index
             ]);
+
+            const fetchRecentStatements = async () => {
+                console.log("starting fetchRecentStatements");
+                try {
+                    const response = await fetch ("/api/bankStatements?limit=5");
+                    console.log("Response Status: ", response.status);
+                const data = await response.json();
+                console.log("Full API Data:", data);
+                console.log("data.data:", data.data);
+                setRecentGenerations(data.data || []);
+                console.log("State Updated");
+                }
+                catch(error) {
+                    console.error("Failed to fetch recent statement:", error);
+                }
+            };
+
+            await fetchRecentStatements();
 
             toast.success(`Statement Generated! ${txns.length} transactions created.`);
 
+            // Redirect
+            router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
             const selectedCompany = companies.find(c => c._id === selectedCompanyId);
             const selectedTemplate = templates.find(t => t._id === selectedTemplateId);
 
@@ -534,82 +573,6 @@
                     <p className="text-sm text-gray-600">
                         Configure parameters for realistic transaction generation
                     </p>
-
-                    <form 
-                    className="mt-4 space-y-4"
-                    >
-                        <div>
-                            <label className="block text-sm font-medium tex-gray-700">
-                                Company
-                            </label>
-
-                                <select 
-                                value={selectedCompanyId}
-                                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                                className="mt-1 w-full rounded-full border-gray-200 bg-white px-4 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none">
-                                    {companies.map((company) => (
-                                        <option key={company._id} value={company._id.toString()}>
-                                            {company.companyName}
-                                        </option>
-                                    ))}
-                                </select>
-                        </div>
-
-                        {/* Statement Period */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Statement Period
-                            </label>
-                            <div className="mt-3 grid gap-6 sm:grid-cols-3">
-                                <div>
-                                    <div className="mb-1 text-sm font-medium text-gray-700">
-                                        From Date
-                                    </div>
-                                <input 
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
-                                />
-                                </div>
-
-                                <div>
-                                    <div className="mb-1 text-sm font-medium text-gray-700">
-                                        To Date
-                                    </div>
-                                <input 
-                                type="date" 
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 text-sm"
-                                />
-                                </div>
-
-                                <div>
-                                    <div className="mb-1 text-sm font-medium text-gray-700">
-                                        Template
-                                    </div>
-                                
-                                <select 
-                                value={statementType}
-                                onChange={(e) => setStatementType(e.target.value)}
-                                className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                        <option value="basic">
-                                            Basic Bank Statement
-                                            </option>
-
-                                            <option value="detailed">
-                                                Detailed Bank Statement
-                                            </option>
-
-                                            <option value="minimal">
-                                                Minimal Bank Statement
-                                            </option>
-                                </select>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
                 </div>
 
                 {/* Transaction Generation Rules */}
@@ -694,6 +657,38 @@
                         ))}
                     </select>
                     </div>
+
+                    {/* Statement Period */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Statement Period
+                            </label>
+                            <div className="mt-3 grid gap-6 sm:grid-cols-3">
+                                <div>
+                                    <div className="mb-1 text-sm font-medium text-gray-700">
+                                        From Date
+                                    </div>
+                                <input 
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                                />
+                                </div>
+
+                                <div>
+                                    <div className="mb-1 text-sm font-medium text-gray-700">
+                                        To Date
+                                    </div>
+                                <input 
+                                type="date" 
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 text-sm"
+                                />
+                                </div>
+                            </div>
+                            </div>
                     
                     {/* Generate Button */}
                     <Button  
