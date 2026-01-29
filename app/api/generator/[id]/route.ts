@@ -16,22 +16,33 @@ export async function GET(_req: Request, ctx: {params: Promise<{id: string}>}) {
         }
         const client = await clientPromise;
         const db = client.db("myAccountDB");
-        const statement = await db.collection("generator").findOne({
-            _id: new ObjectId(id)
+      let statementRecord = await db.collection("bankStatements").findOne({
+            generatorId: id  // Match generatorId field
         });
 
-        if(!statement) {
+        
+        if (!statementRecord) {
+            // FALLBACK: Check generator collection too
+            statementRecord = await db.collection("generator").findOne({
+                _id: new ObjectId(id)
+            });
+        }
+
+
+        if (!statementRecord) {
             return NextResponse.json({
                 success: false,
-                message: "Statement not found"
-            }, {
-                status: 404
-            });
+                message: "Generator not found"
+            }, { status: 404 });
         }
 
         return NextResponse.json({
             success: true,
-            data: statement
+            data: {
+              statement: statementRecord,
+                periodStart: statementRecord.periodStart,
+                periodEnd: statementRecord.periodEnd
+            }
         });
     }
 

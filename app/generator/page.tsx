@@ -2,7 +2,7 @@
     import Button from "@/components/ui/Button";
     import { useRouter } from "next/navigation";
     import { Download, DownloadIcon, Eye, Save, Trash2, X } from "lucide-react";
-    import { useEffect, useState } from "react";
+    import { useCallback, useEffect, useState } from "react";
     import { toast } from "sonner";
 
     interface Generation {
@@ -170,6 +170,26 @@
         );
     };
 
+    const fetchRecentStatements = useCallback(async () => {
+        console.log("Fetch recent statements...");
+        try {
+            const response = await fetch("/api/bankStatements?limit=5");
+            if(!response.ok) {
+                throw new Error("Failed to fetch recent statements");
+            }
+            const data = await response.json();
+            setRecentGenerations(data.data || []);
+        }
+        catch (error) {
+            console.error("Failed to fetch recent statements: ", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchRecentStatements();
+    }, [fetchRecentStatements]);
+
+
     // Generate Statement
     const handleGenerateStatement = async () => {
         if(!selectedCompanyId || !selectedTemplateId) {
@@ -294,25 +314,72 @@
                 ...prev.slice(0, 4), // keep only 5 from Oth index to 4th index
             ]);
 
-            const fetchRecentStatements = async () => {
-                console.log("starting fetchRecentStatements");
+            // fixed handleGenerateStatements
+            const handleGenerateStatement = async() => {
+                if (!selectedCompanyId || !selectedTemplateId) {
+                    toast.error("Please select company and template");
+                    return;
+                }
+                if (!startDate || !endDate) {
+                    toast.error("Please select start date and end date");
+                    return;
+                }
+
+                setLoading(true);
                 try {
-                    const response = await fetch ("/api/bankStatements?limit=5");
-                    console.log("Response Status: ", response.status);
-                const data = await response.json();
-                console.log("Full API Data:", data);
-                console.log("data.data:", data.data);
-                setRecentGenerations(data.data || []);
-                console.log("State Updated");
-                }
-                catch(error) {
-                    console.error("Failed to fetch recent statement:", error);
-                }
-            };
+                    // Generate
+                    const txnRes = await fetch ("/api/generator", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            company: companies.find(c => c._id === selectedCompanyId)?.companyName || "Unknown Company",
+                            templateId: selectedTemplateId,
+                            vendorCategoryId: selectedVendorCategoryId,
+                            vendorId: selectedVendorId,
+                            fromDate: startDate,
+                            toDate: endDate, 
+                            rules,      
+                        })
+                    });
 
-            await fetchRecentStatements();
+                    const json = await txnRes.json();
+                    if (!json.success) {
+                        throw new Error(json.error || "failed to generate statement");            
+                    }
+                    const {statement, id} = json.data;
 
-            toast.success(`Statement Generated! ${txns.length} transactions created.`);
+                    // save to recent generations list
+                    await fetch("/api/bankStatements", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            companyId: selectedCompanyId,
+                            companyName: companies.find(c => c._id === selectedCompanyId)?.companyName,
+                            generatorId: id,
+                            transactionCount: statement.transactions.length,
+                            periodStart: startDate,
+                            periodEnd: endDate,
+                            createdAt: new Date().toISOString()
+                        })
+                    });
+
+                    toast.success(`${statement.transactions.length} transactions generated!`);
+                    // referesh recent list
+                    await fetchRecentStatements();
+                    // preview (state preview)
+                    router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
+                }
+                catch(error: any) {
+                    toast.error("Failed: " + error.message);
+                }
+                finally {
+                    setLoading(false);
+                }
+            }
 
             // Redirect
             router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
@@ -364,6 +431,39 @@
         catch(err) {
             console.error("Invoice Generation Error:", err);
             alert("Something went wrong");
+        }
+    };
+
+    const handleViewStatement = (generatorId: string, companyId: string) => {
+        router.push(`/statement-preview/${generatorId}?companyId=${companyId}&template=Bank%20Statement`);
+    };
+
+    // download icon- download pdf/html
+    const handleDownloadStatement = async (generatorId: string) => {
+        try {
+            setLoading(true);
+            // fetch statement from API
+            const response = await fetch(`/api/generator/${generatorId}/download`);
+            if (!response.ok) {
+                throw new Error("Failed to download statement");
+            }
+            // create download link
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `statement-${generatorId}.pdf`;
+            link.click();
+
+            window.URL.revokeObjectURL(url);
+            toast.success("Statement downloaded!");
+        }
+        catch(error) {
+            toast.error("Download failed");
+            console.error("Download error:", error);
+        }
+        finally {
+            setLoading(false);
         }
     };
 
@@ -850,9 +950,24 @@
                                     </div>
 
                                     <div className="flex gap-3">
-                                        <Eye className="text-blue-600 cursor-pointer"/>
-                                        <DownloadIcon className="text-blue-600 cursor-pointer"/>
+                                        <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleViewStatement(gen.id, selectedCompanyId)}
+                                        title="View statement"
+                                        >
+                                            <Eye className="text-blue-600 cursor-pointer"/>
+                                        </Button>
 
+                                        <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleDownloadStatement(gen.id)}
+                                        title="Download PDF"
+                                        disabled={loading}
+                                        >
+                                            <DownloadIcon className="text-blue-600 cursor-pointer"/>
+                                        </Button>
                                     </div>
                                     </div>
                             ))}
