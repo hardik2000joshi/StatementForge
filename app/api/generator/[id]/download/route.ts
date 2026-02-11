@@ -1,39 +1,153 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/db";
+import {ObjectId} from "mongodb";
+import puppeteer from 'puppeteer';
+import fs from "fs";
+import path from "path";
 
+interface Transaction {
+    date?: string;
+    description?: string;
+    amount: number;
+    type: 'credit' | 'debit';
+    balance?: number;
+}
 export async function GET(request: NextRequest, {params}: {params: {id: string}}) {
     try {
         const {id} = params;
         const client = await clientPromise;
         const db = client.db("myAccountDB");
         
-        const statementRecord = await db.collection("bankStatements").findOne({
+        let statementRecord = await db.collection("bankStatements").findOne({
             generatorId: id
         });
 
         if (!statementRecord) {
-            return NextResponse.json({ error: "Statement not found" }, { status: 404 });
+            statementRecord = await db.collection("generator").findOne({
+                _id: new ObjectId(id)
+            });
         }
 
-        // ✅ Pure Buffer - No external libs needed
-        const pdfBuffer = Buffer.from(`
-            %PDF-1.4
-            1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 
-            3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]/Contents 4 0 R/Resources<</Font<</F1 5 0 R>>>>>>endobj 
-            4 0 obj<</Length 100>>stream
-            BT /F1 24 Tf 100 700 Td (${statementRecord.companyName}) Tj 100 670 Td (Statement) Tj ET
-            endstream endobj 5 0 obj<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>endobj 
-            xref 0 6 0000000000 65535 f 0000000010 00000 n 0000000075 00000 n 0000000120 00000 n 0000000250 00000 n 0000000350 00000 n 
-            trailer<</Size 6/Root 1 0 R>>startxref 450 %%EOF
-        `, 'binary');
+        if (!statementRecord) {
+            return NextResponse.json({
+                error: "Statement not found"
+            }, {
+                status: 404
+            });
+        }
+
+        const htmlTemplate = fs.readFileSync(
+            path.join(process.cwd(), 'app/Templates/basic_invoice_template.html'),
+            'utf-8'
+        );
+
+        const cssContent = fs.readFileSync(
+            path.join(process.cwd(), 'app/Templates/basic_invoice_template.css'),
+            'utf-8'
+        );
+
+        const openingBalanceNum = Number(statementRecord.openingBalance || 0);
+        const transactionsWithBalance = statementRecord.transactions.map((t: any, index: number) => {
+
+            let runningBalance = openingBalanceNum;
+            // Calculate running balance up to this transaction
+            for(let i=0; i<=index; i++) {
+                const prevTxn: any = statementRecord.transactions[i];
+                if (prevTxn.type === "credit") {
+                    runningBalance += Number(prevTxn.amount || 0);
+                }
+                else {
+                    runningBalance -= Number(prevTxn.amount || 0);
+                }
+            }
+
+            return {
+                ...t, balance: runningBalance.toFixed(2)
+            };
+        })
+
+        let transactionsHTML = '';
+        if (transactionsWithBalance.length > 0) {
+            transactionsHTML = transactionsWithBalance.map((t: any) => `
+            <tr class="${t.type === 'credit' ? 'selectable' : 'selectable'} 
+            ${t.selected ? 'selected-row' : ''}">
+            <td>
+            <input type="checkbox" ${t.selected ? 'checked' : ''} disabled>
+            </td>
+            <td>
+            ${t.date || ""}
+            </td>
+            <td>
+            ${t.description || ""}
+            </td>
+            <td class="amount ${t.type || 'debit'}">
+            ${t.amount || ''}
+            </td>
+            <td class="balance">
+            £${t.balance}
+            </td>
+            <td>
+            ${t.type || ""}
+            </td>
+            </tr>
+            `).join('');
+        }
+        else {
+            transactionsHTML = '<tr><td colspan="6" style="text-align: center">No transactions found</td></tr>';
+        }
+
+        const finalHtml = htmlTemplate
+        .replace('{{bankName}}', statementRecord.bankName || '')
+        .replace('{{companyName}}', statementRecord.companyName || '')
+        .replace('{{accountNumber}}', statementRecord.accountNumber)
+        .replace('{{periodStart}}', statementRecord.periodStart || '')
+        .replace('{{periodEnd}}', statementRecord.periodEnd || '')
+        .replace('{{totalTransactions}}', (statementRecord.transactions?.length || 0).toString())
+        .replace('{{openingBalance}}', statementRecord.openingBalance || '0.00')
+        .replace('{{closingBalance}}', statementRecord.closingBalance || '0.00')
+        .replace('{{transactions}}', transactionsHTML)
+
+        // Inline CSS
+        .replace('</head>', `<style>${cssContent}</style></head>`);  // injects external css file directly into html <head> for PDF generation
+
+        // Puppeteer generates PDF from your HTML
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',  // For dev only
+                '--disable-gpu'
+            ]
+        });
+
+        const page = await browser.newPage();
+
+        await page.setContent(finalHtml, {waitUntil: 'networkidle0'})
+        // Pure Buffer - No external libs needed
+        const pdfBuffer = Buffer.from(await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: {
+                top: '20px',
+                bottom: '20px',
+                left: '10px',
+                right: '10px'
+            }
+        }));
+
+        await browser.close();
 
         return new NextResponse(pdfBuffer, {
             headers: {
                 'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="statement-${id}.pdf"`,
+                'Content-Disposition': `attachment; filename="bank-statement-${id}.pdf"`,
             },
         });
     } catch (error: any) {
-        return NextResponse.json({ error: "Download failed" }, { status: 500 });
+        console.error("PDF Generation Error: ", error);
+        return NextResponse.json({ error: `Download failed: ${error.message}`}, { status: 500 });
     }
 }

@@ -189,283 +189,148 @@
         fetchRecentStatements();
     }, [fetchRecentStatements]);
 
-
-    // Generate Statement
     const handleGenerateStatement = async () => {
-        if(!selectedCompanyId || !selectedTemplateId) {
-            toast.error("select company and template");
-            return;
-        }
+    if(!selectedCompanyId || !selectedTemplateId || !startDate || !endDate) {
+        toast.error("Complete all fields");
+        return;
+    }
 
-        if(!startDate || !endDate) {
-            toast.error("Please select start date and end date");
-            return;
-        }
+    setLoading(true);
+    try {
+        // 1. Generate (SINGLE json() call)
+        const txnRes = await fetch("/api/generator", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                company: companies.find(c => c._id === selectedCompanyId)?.companyName,
+                templateId: selectedTemplateId,
+                vendorCategoryId: selectedVendorCategoryId,
+                vendorId: selectedVendorId,
+                fromDate: startDate,
+                toDate: endDate,
+                rules,
+            }),
+        });
 
+        const txndata = await txnRes.json();  // ONLY ONCE
+        if (!txndata.success) throw new Error(txndata.error || "Generation failed");
+
+        const { statement, id } = txndata.data || txndata;
+        const txns = statement?.transactions || [];
+
+        // 2. Calculate balances
+        const openingBalance = Number(rules.openingBalance ?? 5000);
+        const sorted = [...txns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        let balance = openingBalance;
+        for (const t of sorted) {
+            balance += t.type === "credit" ? Number(t.amount) : -Number(t.amount);
+        }
+        const closingBalance = balance;
+
+        const company = companies.find(c => c._id === selectedCompanyId);
+
+        // 3. Save COMPLETE data to DB (PDF/Invoice source)
+        await fetch("/api/bankStatements", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                companyId: selectedCompanyId,
+                companyName: company?.companyName || "Unknown",
+                generatorId: id,
+                bankName: "Your Bank",           // Hardcode or fix companies
+                accountNumber: "1234567890",     // HARDCODE UNTIL companies fixed
+                periodStart: startDate,
+                periodEnd: endDate,
+                openingBalance: openingBalance.toFixed(2),
+                closingBalance: closingBalance.toFixed(2),
+                totalTransactions: txns.length,
+                transactions: txns
+            })
+        });
+
+        // 4. Update UI
+        setTransactions(txns);
+        setSummary({
+            count: txns.length,
+            openingBalance,
+            closingBalance,
+            netChange: closingBalance - openingBalance,
+            period: `${new Date(sorted[0].date).toLocaleDateString()} - ${new Date(sorted[sorted.length - 1].date).toLocaleDateString()}`
+        });
+        setRecentGenerations(prev => [{
+            id, transactions: txns.length, date: new Date().toLocaleString()
+        }, ...prev.slice(0, 4)]);
+
+        toast.success(`${txns.length} transactions ready!`);
+
+        // 5. SINGLE REDIRECT (END)
+        router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
+
+    } catch (error: any) {
+        toast.error(error.message);
+    } finally {
+        setLoading(false);
+    }
+};
+
+const handleGenerateInvoice = async () => {
+    if(selectedTransactions.length === 0) {
+        toast.error("Select transactions first");  // ✅ toast.error not alert
+        return;
+    }
+    try {
+        const response = await fetch("/api/generator/createInvoiceUsingTransactionSelection", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                transactions: selectedTransactions,     // ✅ Array of IDs
+                companyId: selectedCompanyId,          // ✅ STRING ID (was: companies array)
+                startDate, endDate
+            })
+        });
+        const data = await response.json();
+        if(data.success) {
+            router.push(`/invoice/${data.invoiceId}`);  // ✅ router.push not window.location
+        } else {
+            toast.error(data.message);
+        }
+    } catch (err) {
+        toast.error("Invoice failed");
+    }
+};
+
+
+const handleViewStatement = (generatorId: string, companyId: string) => {
+    router.push(`/statement-preview/${generatorId}?companyId=${companyId}&template=Bank%20Statement`);
+};
+
+const handleDownloadStatement = async (generatorId: string) => {
+    try {
         setLoading(true);
-        try {
-            const txnRes = await fetch("/api/generator", {
-                method: "POST",
-                headers: {
-                    "Content-Type" : "application/json"
-                },
-                body: JSON.stringify({
-                    company: companies.find(c => c._id === selectedCompanyId) ?.companyName || "Unknown Company",   
-                    templateId: selectedTemplateId,
-                    vendorCategoryId: selectedVendorCategoryId,
-                    vendorId: selectedVendorId,
-                    fromDate: startDate,
-                    toDate: endDate,          
-                    rules,         
-                }),
-            });
-
-            const json = await txnRes.json();
-            if(!json.success) {
-                throw new Error(json.error || "failed to generate statement");
-            }
-            
-            const {statement, id} = json.data;
-
-            const response = await fetch("/api/bankStatements", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    companyId: selectedCompanyId,
-                    companyName: companies.find(c => c._id === selectedCompanyId)?.companyName,
-                    generatorId: id,
-                    transactionCount: statement.transactions.length,
-                    periodStart: startDate,
-                    periodEnd: endDate,
-                    createdAt: new Date().toISOString()
-                })
-            });
-
-            toast.success(`Statement Generated! ${statement.transactions.length} transactions created.`);
-
-            // Redirect
-             router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
-                   const txndata = await txnRes.json();
-            if (!txndata.success) 
-                throw new Error("Failed to generate transactions"); 
-                const txns = txndata.statement?.transactions || [];
-
-                if (!Array.isArray(txns) || txns.length === 0) {
-                    throw new Error("No transactions returned from API");
-                }
-                setTransactions(txns);
-
-                const sorted = [...txns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                // opening balance (can be configurable instead of fixed)
-                const openingBalance = Number(rules.openingBalance ?? 5000);
-                let balance = openingBalance;
-
-                for (const t of sorted) {
-                    if(t.type === "credit") balance += t.amount;
-                    else balance -= t.amount;
-                }
-
-                const closingBalance = balance;
-                const netChange = closingBalance - openingBalance;
-
-                // update summary dynamically
-                 setSummary({
-        count: txns.length,
-        openingBalance,
-        closingBalance,
-        netChange,
-        period: sorted.length ?
-        `${new Date(sorted[0].date).toLocaleDateString()} - ${new Date(
-          sorted[sorted.length - 1].date
-        ).toLocaleDateString()}`: "-"
-      });
-
-      // Render statement using template
-      const templateId = selectedTemplateId;  // selected from UI
-      const templateRes = await fetch(`/api/bankStatements/${templateId}?companyId=${selectedCompanyId}`
-      );
-
-      const templateData = await templateRes.json();
-      if(!templateRes.ok)
-        throw new Error(templateData.message || "Failed to generate statement");
-
-      setStatementHTML(templateData.html);
-      setStatementCSS(templateData.css);
-      setTransactions(templateData.transactions);
-
-      setSummary({
-        count: templateData.totalTransactions,
-        openingBalance: templateData.openingBalance,
-        closingBalance: templateData.closingBalance,
-        netChange: templateData.closingBalance - templateData.openingBalance,
-        period: `${templateData.periodStart} - ${templateData.periodEnd}`,
-      });
-      
-            // Add to recent generations list
-            setRecentGenerations((prev) => [
-                {
-                    id: id,
-                    transactions: statement.transactions.length,
-                    date: new Date().toLocaleString(),
-                },
-                ...prev.slice(0, 4), // keep only 5 from Oth index to 4th index
-            ]);
-
-            // fixed handleGenerateStatements
-            const handleGenerateStatement = async() => {
-                if (!selectedCompanyId || !selectedTemplateId) {
-                    toast.error("Please select company and template");
-                    return;
-                }
-                if (!startDate || !endDate) {
-                    toast.error("Please select start date and end date");
-                    return;
-                }
-
-                setLoading(true);
-                try {
-                    // Generate
-                    const txnRes = await fetch ("/api/generator", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            company: companies.find(c => c._id === selectedCompanyId)?.companyName || "Unknown Company",
-                            templateId: selectedTemplateId,
-                            vendorCategoryId: selectedVendorCategoryId,
-                            vendorId: selectedVendorId,
-                            fromDate: startDate,
-                            toDate: endDate, 
-                            rules,      
-                        })
-                    });
-
-                    const json = await txnRes.json();
-                    if (!json.success) {
-                        throw new Error(json.error || "failed to generate statement");            
-                    }
-                    const {statement, id} = json.data;
-
-                    // save to recent generations list
-                    await fetch("/api/bankStatements", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            companyId: selectedCompanyId,
-                            companyName: companies.find(c => c._id === selectedCompanyId)?.companyName,
-                            generatorId: id,
-                            transactionCount: statement.transactions.length,
-                            periodStart: startDate,
-                            periodEnd: endDate,
-                            createdAt: new Date().toISOString()
-                        })
-                    });
-
-                    toast.success(`${statement.transactions.length} transactions generated!`);
-                    // referesh recent list
-                    await fetchRecentStatements();
-                    // preview (state preview)
-                    router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
-                }
-                catch(error: any) {
-                    toast.error("Failed: " + error.message);
-                }
-                finally {
-                    setLoading(false);
-                }
-            }
-
-            // Redirect
-            router.push(`/statement-preview/${id}?companyId=${selectedCompanyId}&template=Bank%20Statement`);
-            const selectedCompany = companies.find(c => c._id === selectedCompanyId);
-            const selectedTemplate = templates.find(t => t._id === selectedTemplateId);
-
-            if (!selectedCompany) {
-                alert("please select a company");
-                return;
-            }
+        // fetch statement from API
+        const response = await fetch(`/api/generator/${generatorId}/download`);
+        if (!response.ok) {
+            throw new Error("Failed to download statement");
         }
+        // create download link
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `statement-${generatorId}.pdf`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        toast.success("Statement downloaded!");
+}
+catch(error) {
+    toast.error("Download failed");
+    console.error("Download error:", error);
+}
+finally {
+    setLoading(false);
+}
+};
 
-        catch(err: any) {
-            toast.error("Failed to generate statement", {
-                description: err.message,
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGenerateInvoice = async() => {
-        if(selectedTransactions.length === 0) {
-            alert("Please select at least one transaction.");
-            return;
-        }
-        try {
-            const response = await fetch("/api/generator/createInvoiceUsingTransactionSelection", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    transactions: selectedTransactions,
-                    companyId: companies,
-                    startDate,
-                    endDate
-                })
-            }); 
-            const data = await response.json();
-            if(!data.success) {
-                alert("Error:" +data.message);
-                return;
-            }
-
-            // Redirect user to geneerated invoice preview
-            window.location.href = `/invoice/{$data.invoiceId}`;
-        }
-        catch(err) {
-            console.error("Invoice Generation Error:", err);
-            alert("Something went wrong");
-        }
-    };
-
-    const handleViewStatement = (generatorId: string, companyId: string) => {
-        router.push(`/statement-preview/${generatorId}?companyId=${companyId}&template=Bank%20Statement`);
-    };
-
-    // download icon- download pdf/html
-    const handleDownloadStatement = async (generatorId: string) => {
-        try {
-            setLoading(true);
-            // fetch statement from API
-            const response = await fetch(`/api/generator/${generatorId}/download`);
-            if (!response.ok) {
-                throw new Error("Failed to download statement");
-            }
-            // create download link
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `statement-${generatorId}.pdf`;
-            link.click();
-
-            window.URL.revokeObjectURL(url);
-            toast.success("Statement downloaded!");
-        }
-        catch(error) {
-            toast.error("Download failed");
-            console.error("Download error:", error);
-        }
-        finally {
-            setLoading(false);
-        }
-    };
 
         return (
             <div className="p-6 space-y-6">

@@ -44,11 +44,36 @@ export async function GET(req: Request) {
     
 
 export async function POST(req: Request) {
-    const body = await req.json();
+    try {
+        const body = await req.json();
     const client = await clientPromise;
     const db = await client.db("myAccountDB");
-    const statement = await db.collection("bankStatements").insertOne(body);
+    const doc = {
+        companyId: body.companyId,
+        companyName: body.companyName,
+        generatorId: body.generatorId,
+        periodStart: body.periodStart,
+        periodEnd: body.periodEnd,
+        createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
+
+        transactions: body.transactions || [],
+        transactionCount: body.transactionsCount ?? (body.transactions?.length || 0),
+        openingBalance: body.openingBalance,
+        closingBalance: body.closingBalance,
+    };
+    await db.collection("bankStatements").insertOne(doc);
+
     return NextResponse.json({
         success: true
     });
+    }
+    catch(error: any) {
+        console.error("bankStatements POST error:", error);
+        return NextResponse.json({
+            success: false,
+            error: error.message
+        }, {
+            status: 500
+        });
+    }
 }
